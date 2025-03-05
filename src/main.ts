@@ -1,8 +1,8 @@
-import { slackApp } from '@/core/slack';
+import { APP_PORT, slackApp } from '@/core/slack';
 
 const setSlackBot = async () => {
-  await slackApp.start(3000);
-  slackApp.logger.info('⚡️ 슬랙 봇이 켜졌어요.');
+  await slackApp.start(APP_PORT);
+  slackApp.logger.info(`⚡️ 슬랙 봇이 켜졌어요 (포트: ${APP_PORT})`);
 };
 
 const setSlackAppReloader = () => {

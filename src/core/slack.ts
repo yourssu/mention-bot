@@ -15,6 +15,8 @@ import {
 } from '@/types/member';
 import { BaseSlackMessageMiddleware } from '@/types/slack';
 
+export const APP_PORT = 3000;
+
 export const slackClient = new WebClient(import.meta.env.VITE_BOT_USER_OAUTH_TOKEN, {
   logLevel: LogLevel.WARN,
 });

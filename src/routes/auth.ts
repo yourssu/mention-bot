@@ -17,7 +17,7 @@ export const slackAuthCallback = async (
     return;
   }
 
-  const params = new URL(`${req.headers.host}/${req.url}`).searchParams;
+  const params = new URL(`http://${req.headers.host}${req.url}`).searchParams;
   const code = params.get('code');
 
   if (!code) {
