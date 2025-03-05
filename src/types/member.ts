@@ -40,6 +40,21 @@ export const MemberGroupNameMap = {
 
 export type BaseMemberGroupNameType = (typeof MemberGroupNameMap)[keyof typeof MemberGroupNameMap];
 
+export const BaseMemberGroupKRNameMap: Record<BaseMemberGroupNameType, string> = {
+  '@be': '백엔드',
+  '@android': '안드로이드',
+  '@ios': 'iOS',
+  '@design': '디자인',
+  '@pm': 'PM',
+  '@fe': '프론트엔드',
+  '@finance': 'Finance',
+  '@hr': 'HR',
+  '@marketing': '마케팅',
+  '@lead': '리드',
+  '@vicelead': '부리드',
+  '@legal': 'Legal',
+};
+
 export const nonActiveGroupMembersSuffix = '-non-active';
 export const allGroupMembersSuffix = '-all';
 
