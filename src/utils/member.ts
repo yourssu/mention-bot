@@ -28,12 +28,27 @@ export const findSlackMemberByNotionMember = async (notionMember: NotionMember) 
     return name.toLowerCase().replace(/\s/g, '');
   };
 
-  const slackMembers = await getAllSlackMembers();
+  const findAllSlackMembers = () => {
+    return slackMembers.filter((slackMember) => {
+      if (!slackMember.name) {
+        return false;
+      }
+      return normalizeName(slackMember.name).includes(notionMember.name);
+    });
+  };
 
-  return slackMembers.find((slackMember) => {
-    if (!slackMember.name) {
-      return false;
-    }
-    return normalizeName(slackMember.name).includes(notionMember.name);
+  const slackMembers = await getAllSlackMembers();
+  const matches = findAllSlackMembers();
+
+  if (matches.length <= 1) {
+    return matches[0];
+  }
+
+  const similarMatches = [...matches].sort((a, b) => {
+    const compareA = normalizeName(a.name!).length - notionMember.name.length;
+    const compareB = normalizeName(b.name!).length - notionMember.name.length;
+    return compareA - compareB;
   });
+
+  return similarMatches[0];
 };
