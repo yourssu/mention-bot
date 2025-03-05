@@ -17,6 +17,7 @@ export type SlackMessageEvent<CustomContext extends StringIndexed = StringIndexe
   message: {
     team: string;
     text: string;
+    thread_ts?: string; // eslint-disable-line @typescript-eslint/naming-convention
     user: string;
   } & BaseSlackMessageEvent<CustomContext>['message'];
 } & Omit<BaseSlackMessageEvent<CustomContext>, 'message'>;

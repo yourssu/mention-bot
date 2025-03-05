@@ -19,6 +19,7 @@ export const renderAuthEphemeralMessage = async ({
     await slackApp.client.chat.postEphemeral({
       channel: message.channel,
       user: message.user,
+      thread_ts: message.thread_ts,
       blocks: [
         {
           type: 'section',
