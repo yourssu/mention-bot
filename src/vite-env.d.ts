@@ -2,6 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_BOT_USER_OAUTH_TOKEN: string;
+  readonly VITE_NOTION_API_KEY: string;
+  readonly VITE_NOTION_MEMBER_DATABASE_ID: string;
   readonly VITE_SLACK_APP_ID: string;
   readonly VITE_SLACK_CLIENT_ID: string;
   readonly VITE_SLACK_CLIENT_SECRET: string;

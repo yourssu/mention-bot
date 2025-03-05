@@ -1,25 +1,91 @@
-import { getAllMembers } from '@/apis/member';
-import { App } from '@/core/app';
-import { feMemberNames } from '@/types/member';
+import { Member } from '@slack/web-api/dist/types/response/UsersListResponse';
+import { objectEntries } from '@toss/utils';
+
+import { getAllSlackMembers } from '@/apis/member';
+import { slackApp } from '@/core/slack';
+import {
+  AllMemberGroupNameType,
+  BaseMemberGroupNameType,
+  MemberGroupNameMap,
+  NotionMemberPosition,
+  NotionMemberStatusType,
+  allGroupMembersSuffix,
+  nonActiveGroupMembersSuffix,
+} from '@/types/member';
 import { SlackMessageEvent } from '@/types/slack';
-import { makeMembersMentionString } from '@/utils/member';
+import { findSlackMemberByNotionMember, queryNotionMembers } from '@/utils/member';
+import { makeMembersMentionString } from '@/utils/string';
 
-export const editMessageAsMentionString = async (
-  message: SlackMessageEvent['message'],
-  token: string
-) => {
+interface EditMessageAsMentionStringProps {
+  mentionGroups: AllMemberGroupNameType[];
+  message: SlackMessageEvent['message'];
+  token: string;
+}
+
+export const editMessageAsMentionString = async ({
+  message,
+  token,
+  mentionGroups,
+}: EditMessageAsMentionStringProps) => {
+  const getPositionByGroupName = (groupName: BaseMemberGroupNameType) => {
+    return objectEntries(MemberGroupNameMap).find(([, value]) => value === groupName)?.[0];
+  };
+
+  const parseMentionGroupToQuery = (
+    group: AllMemberGroupNameType
+  ): {
+    position: NotionMemberPosition;
+    status: NotionMemberStatusType[];
+  } => {
+    const baseGroupName = group
+      .replace(nonActiveGroupMembersSuffix, '')
+      .replace(allGroupMembersSuffix, '') as BaseMemberGroupNameType;
+
+    if (group.includes(nonActiveGroupMembersSuffix)) {
+      return {
+        position: getPositionByGroupName(baseGroupName)!,
+        status: ['NON-ACTIVE', '졸업'],
+      };
+    }
+
+    if (group.includes(allGroupMembersSuffix)) {
+      return {
+        position: getPositionByGroupName(baseGroupName)!,
+        status: ['ACTIVE', 'NON-ACTIVE', '졸업'],
+      };
+    }
+
+    return {
+      position: getPositionByGroupName(baseGroupName)!,
+      status: ['ACTIVE'],
+    };
+  };
+
+  const getSlackMembersByMentionGroup = async (group: AllMemberGroupNameType) => {
+    const query = parseMentionGroupToQuery(group);
+    const notionMembers = await queryNotionMembers(query);
+    const slackMembers = (
+      await Promise.all(
+        notionMembers.map((member) => {
+          return findSlackMemberByNotionMember(member);
+        })
+      )
+    ).filter(Boolean) as Member[];
+
+    return slackMembers;
+  };
+
+  await getAllSlackMembers(); // for ensure slack members cached
+
   const { channel, ts, text } = message;
-  const members = await getAllMembers();
-  const feMembers = members.filter((member) => {
-    const { is_bot: isBot, name } = member;
-    return (
-      !isBot && feMemberNames.some((feMemberName) => !!name?.toLowerCase().includes(feMemberName))
-    );
-  });
 
-  const newText = text.replace('@fe', `*\`@fe\`* (${makeMembersMentionString(feMembers)})`);
+  let newText = text;
+  for await (const group of mentionGroups) {
+    const feMembers = await getSlackMembersByMentionGroup(group);
+    newText = newText.replace(group, `*\`${group}\`* (${makeMembersMentionString(feMembers)})`);
+  }
 
-  await App.client.chat.update({
+  await slackApp.client.chat.update({
     channel,
     ts,
     text: newText,

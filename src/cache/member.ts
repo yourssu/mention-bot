@@ -1,8 +1,16 @@
-import { Member } from '@slack/web-api/dist/types/response/UsersListResponse';
+import { Member as SlackMember } from '@slack/web-api/dist/types/response/UsersListResponse';
 
-export const membersCacheDuration = 5; // 단위는 분이에요.
+import { BaseCache } from '@/types/cache';
+import { NotionMember } from '@/types/member';
 
-export const membersCache: { expireAt: number | undefined; members: Member[] } = {
+export const slackMembersCache: BaseCache<SlackMember[]> = {
   expireAt: undefined,
-  members: [],
+  data: [],
+  duration: 5 * 60 * 1000, // 5분
+};
+
+export const notionMembersCache: BaseCache<NotionMember[]> = {
+  expireAt: undefined,
+  data: [],
+  duration: 5 * 60 * 1000, // 5분
 };

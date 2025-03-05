@@ -3,8 +3,8 @@ import { IncomingMessage, ServerResponse } from 'http';
 
 import { editMessageAsMentionString } from '@/apis/message';
 import { userTokens } from '@/cache/token';
-import { App } from '@/core/app';
-import { SlackMessageEvent } from '@/types/slack';
+import { slackApp } from '@/core/slack';
+import { AuthURIPayload } from '@/types/auth';
 import { makeSlackCallbackUri } from '@/utils/uri';
 
 export const slackAuthCallback = async (
@@ -33,10 +33,10 @@ export const slackAuthCallback = async (
     return;
   }
 
-  const payload: SlackMessageEvent['message'] = JSON.parse(decodeURIComponent(rawPayload));
+  const payload: AuthURIPayload = JSON.parse(decodeURIComponent(rawPayload));
   const redirectUri = makeSlackCallbackUri(payload);
 
-  const r = await App.client.oauth.v2.access({
+  const r = await slackApp.client.oauth.v2.access({
     client_id: import.meta.env.VITE_SLACK_CLIENT_ID,
     client_secret: import.meta.env.VITE_SLACK_CLIENT_SECRET,
     code,
@@ -49,12 +49,16 @@ export const slackAuthCallback = async (
     res.end('토큰 발급에 실패했습니다.');
     return;
   }
-  userTokens.set(payload.user, token);
+  userTokens.set(payload.message.user, token);
 
-  await editMessageAsMentionString(payload, token);
+  await editMessageAsMentionString({
+    message: payload.message,
+    token,
+    mentionGroups: payload.mentionGroups,
+  });
 
   res.writeHead(302, {
-    location: `slack://channel?team=${payload.team}&id=${payload.channel}`,
+    location: `slack://channel?team=${payload.message.team}&id=${payload.message.channel}`,
   });
   res.end();
 };

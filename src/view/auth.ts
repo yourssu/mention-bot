@@ -1,13 +1,22 @@
-import { App } from '@/core/app';
+import { slackApp } from '@/core/slack';
+import { AllMemberGroupNameType } from '@/types/member';
 import { SlackMessageEvent } from '@/types/slack';
 import { makeSlackCallbackUri } from '@/utils/uri';
 
-export const renderAuthEphemeralMessage = async (message: SlackMessageEvent['message']) => {
-  const redirectUri = encodeURIComponent(makeSlackCallbackUri(message));
+interface RenderAuthEphemeralMessageProps {
+  mentionGroups: AllMemberGroupNameType[];
+  message: SlackMessageEvent['message'];
+}
+
+export const renderAuthEphemeralMessage = async ({
+  mentionGroups,
+  message,
+}: RenderAuthEphemeralMessageProps) => {
+  const redirectUri = encodeURIComponent(makeSlackCallbackUri({ message, mentionGroups }));
   const scopes = encodeURIComponent('chat:write,users:read,users.profile:read');
 
   try {
-    await App.client.chat.postEphemeral({
+    await slackApp.client.chat.postEphemeral({
       channel: message.channel,
       user: message.user,
       blocks: [
