@@ -1,11 +1,14 @@
-import { APP_PORT, slackApp } from '@/core/slack';
+import { assertEnvironmentVariables, config, stage } from '@/config';
+import { slackApp } from '@/core/slack';
 
-const setSlackBot = async () => {
-  await slackApp.start(APP_PORT);
-  slackApp.logger.info(`⚡️ 슬랙 봇이 켜졌어요 (포트: ${APP_PORT})`);
+const startSlackBot = async () => {
+  const stageMessage = stage === 'production' ? '[프로덕션]' : '[개발]';
+
+  await slackApp.start(config.port);
+  slackApp.logger.info(`⚡️ [${stageMessage}] 슬랙 봇이 켜졌어요 (포트: ${config.port})`);
 };
 
-const setSlackAppReloader = () => {
+const setSlackBotReloader = () => {
   if (!import.meta.hot) {
     return;
   }
@@ -20,6 +23,8 @@ const setSlackAppReloader = () => {
 };
 
 (async () => {
-  await setSlackBot();
-  setSlackAppReloader();
+  assertEnvironmentVariables();
+
+  await startSlackBot();
+  setSlackBotReloader();
 })();

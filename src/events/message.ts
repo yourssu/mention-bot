@@ -12,15 +12,11 @@ export const handleGroupKeywordMessage = async ({ message, context }: SlackMessa
     return;
   }
 
-  try {
-    const res = await slackApp.client.auth.test({ token: userToken });
-    if (!res.ok) {
-      await renderAuthEphemeralMessage({ message, mentionGroups: context.matches });
-      return;
-    }
-
-    await editMessageAsMentionString({ message, token: userToken, mentionGroups: context.matches });
-  } catch (error) {
-    console.error(error);
+  const res = await slackApp.client.auth.test({ token: userToken });
+  if (!res.ok) {
+    await renderAuthEphemeralMessage({ message, mentionGroups: context.matches });
+    return;
   }
+
+  await editMessageAsMentionString({ message, token: userToken, mentionGroups: context.matches });
 };

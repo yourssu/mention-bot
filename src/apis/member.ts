@@ -30,6 +30,11 @@ export const getAllNotionMembers = async () => {
     const baseName = rawMember.properties.이름.title[0].plain_text;
     const normalizedBaseName = baseName.trim().toLowerCase();
 
+    /* 
+      유어슈 노션 DB에서 간혹 이름이 없는 사용자를 NAME으로 관리하고 있어요.
+      어쩔 수 없이 해당 경우는 필터링하도록 하드코딩했어요.
+      유지보수를 위해 지속적 예외 케이스 트래킹이 필요해요.
+    */
     if (normalizedBaseName === 'name') {
       if (!rawMember.properties.MEMBER.people[0]?.name) {
         return '';

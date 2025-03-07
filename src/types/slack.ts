@@ -1,6 +1,9 @@
 import {
   AllMiddlewareArgs,
   Middleware,
+  SlackAction,
+  SlackActionMiddlewareArgs,
+  SlackCommandMiddlewareArgs,
   SlackEventMiddlewareArgs,
   StringIndexed,
 } from '@slack/bolt';
@@ -21,3 +24,9 @@ export type SlackMessageEvent<CustomContext extends StringIndexed = StringIndexe
     user: string;
   } & BaseSlackMessageEvent<CustomContext>['message'];
 } & Omit<BaseSlackMessageEvent<CustomContext>, 'message'>;
+
+export type SlackCommandEvent<CustomContext extends StringIndexed = StringIndexed> =
+  AllMiddlewareArgs<CustomContext> & SlackCommandMiddlewareArgs;
+
+export type SlackActionEvent<CustomContext extends StringIndexed = StringIndexed> =
+  AllMiddlewareArgs<CustomContext> & SlackActionMiddlewareArgs<SlackAction>;

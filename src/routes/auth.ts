@@ -1,52 +1,54 @@
 import { ParamsIncomingMessage } from '@slack/bolt/dist/receivers/ParamsIncomingMessage';
 import { IncomingMessage, ServerResponse } from 'http';
 
+import { getUserAccessTokenByOAuth } from '@/apis/auth';
 import { editMessageAsMentionString } from '@/apis/message';
 import { userTokens } from '@/cache/token';
-import { slackApp } from '@/core/slack';
 import { AuthURIPayload } from '@/types/auth';
-import { makeSlackCallbackUri } from '@/utils/uri';
 
-export const slackAuthCallback = async (
+const throw400 = (message: string, res: ServerResponse<IncomingMessage>) => {
+  res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(message);
+};
+
+const assertAuthRouteUri = (req: ParamsIncomingMessage, res: ServerResponse<IncomingMessage>) => {
+  const params = new URL(`http://${req.headers.host}${req.url}`).searchParams;
+  const code = params.get('code');
+  const rawPayload = params.get('payload');
+
+  if (!code) {
+    throw400('잘못된 파라미터입니다.', res);
+    return undefined;
+  }
+
+  if (!rawPayload) {
+    throw400('잘못된 payload입니다.', res);
+    return undefined;
+  }
+
+  const payload: AuthURIPayload = JSON.parse(decodeURIComponent(rawPayload));
+
+  return { code, payload };
+};
+
+export const authRoute = async (
   req: ParamsIncomingMessage,
   res: ServerResponse<IncomingMessage>
 ) => {
   if (!req.url || !req.headers.host) {
-    res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end('잘못된 요청입니다.');
+    throw400('잘못된 요청입니다.', res);
     return;
   }
 
-  const params = new URL(`http://${req.headers.host}${req.url}`).searchParams;
-  const code = params.get('code');
-
-  if (!code) {
-    res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end('잘못된 파라미터입니다.');
+  const uri = assertAuthRouteUri(req, res);
+  if (!uri) {
     return;
   }
+  const { code, payload } = uri;
 
-  const rawPayload = params.get('payload');
-  if (!rawPayload) {
-    res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end('잘못된 payload입니다.');
-    return;
-  }
-
-  const payload: AuthURIPayload = JSON.parse(decodeURIComponent(rawPayload));
-  const redirectUri = makeSlackCallbackUri(payload);
-
-  const r = await slackApp.client.oauth.v2.access({
-    client_id: import.meta.env.VITE_SLACK_CLIENT_ID,
-    client_secret: import.meta.env.VITE_SLACK_CLIENT_SECRET,
-    code,
-    redirect_uri: redirectUri,
-  });
-
-  const token = r.authed_user?.access_token;
+  const token = await getUserAccessTokenByOAuth({ code, payload });
   if (!token) {
-    res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end('토큰 발급에 실패했습니다.');
+    throw400('토큰 발급에 실패했습니다.', res);
     return;
   }
   userTokens.set(payload.message.user, token);
