@@ -1,6 +1,9 @@
 import { deleteCustomGroup, upsertCustomGroup } from '@/apis/group';
+import { customGroups } from '@/cache/group';
+import { groupKeywordSuffix } from '@/types/group';
 import { SlackViewEvent } from '@/types/slack';
 import { assertNonNullishSoftly } from '@/utils/assertion';
+import { isNonCustomGroup } from '@/utils/group';
 import { querySlackMembersBySlackId } from '@/utils/member';
 import {
   renderAddCustomGroupSubmissionErrorEphemeralMessage,
@@ -10,11 +13,25 @@ import {
 } from '@/view/view';
 
 export const handleAddCustomGroupModalSubmission = async ({ ack, view }: SlackViewEvent) => {
+  const makeGroupName = (groupName: string | undefined) => {
+    if (!groupName?.trim()) {
+      return undefined;
+    }
+    return `${groupKeywordSuffix}${groupName.replace(/@+/g, '').replace(/\s+/g, '-').trim()}`;
+  };
+
   const validateForm = () => {
     if (!groupName) {
       return {
         success: false,
         message: '그룹 이름을 입력해주세요.',
+      };
+    }
+
+    if (isNonCustomGroup(groupName) || customGroups.has(groupName)) {
+      return {
+        success: false,
+        message: '이미 존재하는 그룹 이름이에요.',
       };
     }
 
@@ -33,7 +50,9 @@ export const handleAddCustomGroupModalSubmission = async ({ ack, view }: SlackVi
 
   await ack();
 
-  const groupName = view.state.values.writeGroupName_block.writeGroupName_input.value;
+  const groupName = makeGroupName(
+    view.state.values.writeGroupName_block.writeGroupName_input.value ?? undefined
+  );
   const members = view.state.values.selectMember_block.selectMember_accessory.selected_users;
   const metadata: {
     channel: string;

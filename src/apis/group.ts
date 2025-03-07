@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
 import { customGroups } from '@/cache/group';
-import { CustomGroupType, groupKeywordSuffix } from '@/types/group';
+import { CustomGroupType } from '@/types/group';
 import { assertDirectoryExists, writeFileEnsureDirectorySync } from '@/utils/file';
 
 type UpsertCustomGroupProps = Pick<CustomGroupType, 'creatorSlackId' | 'memberSlackIds' | 'name'>;
@@ -43,7 +43,7 @@ export const upsertCustomGroup = async ({
       return {
         ...cachedGroup,
         memberSlackIds,
-        name: fullName,
+        name,
         updaterSlackId: creatorSlackId,
         updatedAt: now.getTime(),
       };
@@ -51,7 +51,7 @@ export const upsertCustomGroup = async ({
     return {
       creatorSlackId,
       memberSlackIds,
-      name: fullName,
+      name,
       createdAt: now.getTime(),
       updaterSlackId: undefined,
       updatedAt: undefined,
@@ -59,10 +59,9 @@ export const upsertCustomGroup = async ({
   };
 
   const now = new Date();
-  const fullName = `${groupKeywordSuffix}${name}`;
-  const cachedGroup = customGroups.get(fullName);
+  const cachedGroup = customGroups.get(name);
 
-  customGroups.set(fullName, getCurrentNewGroup());
+  customGroups.set(name, getCurrentNewGroup());
 
   updateCustomGroupFileForCurrentCache();
 };

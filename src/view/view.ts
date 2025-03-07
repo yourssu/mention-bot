@@ -79,7 +79,7 @@ export const renderAddCustomGroupSubmissionSuccessEphemeralMessage = async ({
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `*\`@${groupName}\`* 을 메시지에 포함시켜서 멤버들을 멘션해보세요!`,
+          text: `*\`${groupName}\`* 을 메시지에 포함시켜서 멤버들을 멘션해보세요!`,
         },
       },
     ],
