@@ -1,10 +1,12 @@
-import { upsertCustomGroup } from '@/apis/group';
+import { deleteCustomGroup, upsertCustomGroup } from '@/apis/group';
 import { SlackViewEvent } from '@/types/slack';
 import { assertNonNullishSoftly } from '@/utils/assertion';
 import { querySlackMembersBySlackId } from '@/utils/member';
 import {
   renderAddCustomGroupSubmissionErrorEphemeralMessage,
   renderAddCustomGroupSubmissionSuccessEphemeralMessage,
+  renderDeleteCustomGroupSubmissionErrorEphemeralMessage,
+  renderDeleteCustomGroupSubmissionSuccessEphemeralMessage,
 } from '@/view/view';
 
 export const handleAddCustomGroupModalSubmission = async ({ ack, view }: SlackViewEvent) => {
@@ -63,5 +65,51 @@ export const handleAddCustomGroupModalSubmission = async ({ ack, view }: SlackVi
     user: metadata.user,
     groupName,
     slackMembers,
+  });
+};
+
+export const handleDeleteCustomGroupModalSubmission = async ({ ack, view }: SlackViewEvent) => {
+  const validateForm = () => {
+    if (!groupName) {
+      return {
+        success: false,
+        message: '그룹 이름을 선택해주세요.',
+      };
+    }
+
+    return {
+      success: true,
+      message: undefined,
+    };
+  };
+
+  await ack();
+
+  const groupName = view.state.values.deleteGroup_block.deleteGroup_select.selected_options?.map(
+    (option) => option.value
+  )[0];
+  const metadata: {
+    channel: string;
+    user: string;
+  } = JSON.parse(view.private_metadata);
+
+  const { success, message } = validateForm();
+
+  if (!success) {
+    await renderDeleteCustomGroupSubmissionErrorEphemeralMessage({
+      channel: metadata.channel,
+      user: metadata.user,
+      errorMessage: message ?? '',
+    });
+    return;
+  }
+
+  assertNonNullishSoftly(groupName);
+
+  await deleteCustomGroup(groupName);
+  await renderDeleteCustomGroupSubmissionSuccessEphemeralMessage({
+    channel: metadata.channel,
+    user: metadata.user,
+    groupName,
   });
 };

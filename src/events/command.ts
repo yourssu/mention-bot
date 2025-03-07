@@ -1,6 +1,7 @@
 import { SlackCommandEvent } from '@/types/slack';
 import {
   renderCommandAddCustomGroupModal,
+  renderCommandDeleteCustomGroupModal,
   renderCommandListEphemeralMessage,
 } from '@/view/command';
 
@@ -12,4 +13,9 @@ export const handleListCommand = async ({ ack, command }: SlackCommandEvent) => 
 export const handleAddComand = async ({ ack, body }: SlackCommandEvent) => {
   await ack();
   await renderCommandAddCustomGroupModal(body);
+};
+
+export const handleDeleteCommand = async ({ ack, body }: SlackCommandEvent) => {
+  await ack();
+  await renderCommandDeleteCustomGroupModal(body);
 };

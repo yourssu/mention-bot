@@ -4,9 +4,12 @@ import { LogLevel, WebClient } from '@slack/web-api';
 import { getAllCustomGroupNames } from '@/apis/group';
 import { config } from '@/config';
 import { handleAuthButtonAction } from '@/events/action';
-import { handleAddComand, handleListCommand } from '@/events/command';
+import { handleAddComand, handleDeleteCommand, handleListCommand } from '@/events/command';
 import { handleGroupKeywordMessage } from '@/events/message';
-import { handleAddCustomGroupModalSubmission } from '@/events/view';
+import {
+  handleAddCustomGroupModalSubmission,
+  handleDeleteCustomGroupModalSubmission,
+} from '@/events/view';
 import { authRoute } from '@/routes/auth';
 import { allMemberGroupName } from '@/types/group';
 import { BaseSlackMessageMiddleware, SlackMessageEvent } from '@/types/slack';
@@ -67,4 +70,8 @@ slackApp.command('/list', handleListCommand);
 
 slackApp.command('/add', handleAddComand);
 
-slackApp.view('addMentionGroup', handleAddCustomGroupModalSubmission);
+slackApp.command('/delete', handleDeleteCommand);
+
+slackApp.view('addCustomGroup', handleAddCustomGroupModalSubmission);
+
+slackApp.view('deleteCustomGroup', handleDeleteCustomGroupModalSubmission);

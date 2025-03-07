@@ -67,6 +67,11 @@ export const upsertCustomGroup = async ({
   updateCustomGroupFileForCurrentCache();
 };
 
+export const deleteCustomGroup = async (groupName: string) => {
+  customGroups.delete(groupName);
+  updateCustomGroupFileForCurrentCache();
+};
+
 export const getAllCustomGroupNames = () => {
   return Array.from(customGroups.keys());
 };

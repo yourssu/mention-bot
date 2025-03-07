@@ -18,6 +18,16 @@ interface RenderAddCustomGroupSubmissionSuccessEphemeralMessageProps
   slackMembers: Member[];
 }
 
+interface RenderDeleteCustomGroupSubmissionErrorEphemeralMessageProps
+  extends AddCustomGroupSubmissionMetadata {
+  errorMessage: string;
+}
+
+interface RenderDeleteCustomGroupSubmissionSuccessEphemeralMessageProps
+  extends AddCustomGroupSubmissionMetadata {
+  groupName: string;
+}
+
 export const renderAddCustomGroupSubmissionErrorEphemeralMessage = async ({
   channel,
   user,
@@ -70,6 +80,53 @@ export const renderAddCustomGroupSubmissionSuccessEphemeralMessage = async ({
         text: {
           type: 'mrkdwn',
           text: `*\`@${groupName}\`* 을 메시지에 포함시켜서 멤버들을 멘션해보세요!`,
+        },
+      },
+    ],
+  });
+};
+
+export const renderDeleteCustomGroupSubmissionErrorEphemeralMessage = async ({
+  channel,
+  user,
+  errorMessage,
+}: RenderDeleteCustomGroupSubmissionErrorEphemeralMessageProps) => {
+  await slackApp.client.chat.postEphemeral({
+    channel,
+    user,
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '*❗️ 그룹 제거에 실패했어요*',
+        },
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: errorMessage,
+        },
+      },
+    ],
+  });
+};
+
+export const renderDeleteCustomGroupSubmissionSuccessEphemeralMessage = async ({
+  channel,
+  groupName,
+  user,
+}: RenderDeleteCustomGroupSubmissionSuccessEphemeralMessageProps) => {
+  await slackApp.client.chat.postEphemeral({
+    channel,
+    user,
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `*✅ 그룹 제거에 성공했어요*\n\n그룹명: *\`${groupName}\`*`,
         },
       },
     ],

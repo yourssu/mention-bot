@@ -1,6 +1,7 @@
 import { SlashCommand } from '@slack/bolt';
 import { objectValues } from '@toss/utils';
 
+import { customGroups } from '@/cache/group';
 import { stage } from '@/config';
 import { slackApp } from '@/core/slack';
 import {
@@ -18,7 +19,7 @@ export const renderCommandAddCustomGroupModal = async (body: SlashCommand) => {
     trigger_id: body.trigger_id,
     view: {
       type: 'modal',
-      callback_id: 'addMentionGroup',
+      callback_id: 'addCustomGroup',
       title: {
         type: 'plain_text',
         text: '멘션 그룹 추가',
@@ -64,6 +65,54 @@ export const renderCommandAddCustomGroupModal = async (body: SlashCommand) => {
       submit: {
         type: 'plain_text',
         text: '그룹 만들기',
+      },
+      private_metadata: JSON.stringify({
+        channel: body.channel_id,
+        user: body.user_id,
+      }),
+    },
+  });
+};
+
+export const renderCommandDeleteCustomGroupModal = async (body: SlashCommand) => {
+  await slackApp.client.views.open({
+    trigger_id: body.trigger_id,
+    view: {
+      type: 'modal',
+      callback_id: 'deleteCustomGroup',
+      title: {
+        type: 'plain_text',
+        text: '멘션 그룹 제거',
+      },
+      blocks: [
+        {
+          type: 'section',
+          block_id: 'deleteGroup_block',
+          text: {
+            type: 'mrkdwn',
+            text: '제거할 멘션 그룹을 선택해주세요',
+          },
+          accessory: {
+            type: 'multi_static_select',
+            action_id: 'deleteGroup_select',
+            max_selected_items: 1,
+            placeholder: {
+              type: 'plain_text',
+              text: '멘션 그룹을 선택해주세요...',
+            },
+            options: Array.from(customGroups.keys()).map((groupName) => ({
+              text: {
+                type: 'plain_text',
+                text: groupName,
+              },
+              value: groupName,
+            })),
+          },
+        },
+      ],
+      submit: {
+        type: 'plain_text',
+        text: '제거',
       },
       private_metadata: JSON.stringify({
         channel: body.channel_id,
