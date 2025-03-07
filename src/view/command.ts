@@ -1,6 +1,7 @@
 import { SlashCommand } from '@slack/bolt';
 import { objectValues } from '@toss/utils';
 
+import { stage } from '@/config';
 import { slackApp } from '@/core/slack';
 import {
   AllMemberGroupNameType,
@@ -54,9 +55,23 @@ export const renderCommandListEphemeralMessage = async (command: SlashCommand) =
     },
   ];
 
+  const listBlocks = objectValues(MemberGroupNameMap).flatMap((name) => makeSection(name));
+
   await slackApp.client.chat.postEphemeral({
     channel: command.channel_id,
     user: command.user_id,
-    blocks: objectValues(MemberGroupNameMap).flatMap((name) => makeSection(name)),
+    blocks:
+      stage === 'development'
+        ? [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: '*[개발]*\n\n',
+              },
+            },
+            ...listBlocks,
+          ]
+        : listBlocks,
   });
 };

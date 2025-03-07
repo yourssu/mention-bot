@@ -1,3 +1,4 @@
+import { stage } from '@/config';
 import { slackApp } from '@/core/slack';
 import { AllMemberGroupNameType } from '@/types/group';
 import { SlackMessageEvent } from '@/types/slack';
@@ -24,7 +25,7 @@ export const renderAuthEphemeralMessage = async ({
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: '멘션봇이 메시지를 편집하기 위해서 사용자 인증이 필요해요.',
+          text: `${stage === 'development' ? '[개발]' : ''}멘션봇이 메시지를 편집하기 위해서 사용자 인증이 필요해요.`,
         },
       },
       {
