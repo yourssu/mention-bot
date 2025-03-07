@@ -1,6 +1,6 @@
 import { ensureSlackMembersCache } from '@/cache/member';
 import { slackApp } from '@/core/slack';
-import { AllMemberGroupNameType } from '@/types/member';
+import { AllMemberGroupNameType } from '@/types/group';
 import { SlackMessageEvent } from '@/types/slack';
 import { querySlackMembersByMentionGroup } from '@/utils/member';
 import { toSlackMemberMentionString } from '@/utils/slack';

@@ -1,4 +1,4 @@
-import { AllMemberGroupNameType } from '@/types/member';
+import { AllMemberGroupNameType } from '@/types/group';
 import { SlackMessageEvent } from '@/types/slack';
 
 export type AuthURIPayload = {
