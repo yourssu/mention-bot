@@ -48,3 +48,12 @@ export const allMemberGroupName = flatMap(
     ] as const
 );
 export type AllMemberGroupNameType = (typeof allMemberGroupName)[number];
+
+export type CustomGroupType = {
+  createdAt: number;
+  creatorSlackId: string;
+  memberSlackIds: string[];
+  name: string;
+  updatedAt?: number;
+  updaterSlackId?: string;
+};

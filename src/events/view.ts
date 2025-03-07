@@ -1,3 +1,4 @@
+import { upsertCustomGroup } from '@/apis/group';
 import { SlackViewEvent } from '@/types/slack';
 import { assertNonNullishSoftly } from '@/utils/assertion';
 import { querySlackMembersBySlackId } from '@/utils/member';
@@ -7,8 +8,6 @@ import {
 } from '@/view/view';
 
 export const handleAddCustomGroupModalSubmission = async ({ ack, view }: SlackViewEvent) => {
-  await ack();
-
   const validateForm = () => {
     if (!groupName) {
       return {
@@ -54,6 +53,11 @@ export const handleAddCustomGroupModalSubmission = async ({ ack, view }: SlackVi
   assertNonNullishSoftly(groupName);
 
   const slackMembers = await querySlackMembersBySlackId(members);
+  await upsertCustomGroup({
+    creatorSlackId: metadata.user,
+    name: groupName,
+    memberSlackIds: members,
+  });
   await renderAddCustomGroupSubmissionSuccessEphemeralMessage({
     channel: metadata.channel,
     user: metadata.user,

@@ -1,3 +1,4 @@
+import { syncCustomGroupCacheWithCustomGroupFile } from '@/apis/group';
 import { assertEnvironmentVariables, config, stage } from '@/config';
 import { slackApp } from '@/core/slack';
 
@@ -27,4 +28,6 @@ const setSlackBotReloader = () => {
 
   await startSlackBot();
   setSlackBotReloader();
+
+  syncCustomGroupCacheWithCustomGroupFile();
 })();
