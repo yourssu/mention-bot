@@ -70,3 +70,8 @@ export const querySlackMemberByName = async (name: string) => {
 
   return similarMatches[0];
 };
+
+export const querySlackMembersBySlackId = async (slackIds: string[]) => {
+  const slackMembers = await getAllSlackMembers();
+  return slackMembers.filter((member) => member.id && slackIds.includes(member.id));
+};

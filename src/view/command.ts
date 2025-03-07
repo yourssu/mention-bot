@@ -13,6 +13,66 @@ import {
   nonActiveGroupMembersSuffix,
 } from '@/types/group';
 
+export const renderCommandAddCustomGroupModal = async (body: SlashCommand) => {
+  await slackApp.client.views.open({
+    trigger_id: body.trigger_id,
+    view: {
+      type: 'modal',
+      callback_id: 'addMentionGroup',
+      title: {
+        type: 'plain_text',
+        text: '멘션 그룹 추가',
+      },
+      blocks: [
+        {
+          type: 'input',
+          block_id: 'writeGroupName_block',
+          label: {
+            type: 'plain_text',
+            text: '추가할 멘션 그룹 이름을 입력해주세요',
+          },
+          hint: {
+            type: 'plain_text',
+            text: '@를 제외한 그룹 이름을 작성해주세요. 키워드 사이의 공백은 반드시 -로 대체해주세요.',
+          },
+          element: {
+            type: 'plain_text_input',
+            action_id: 'writeGroupName_input',
+            multiline: false,
+          },
+        },
+        {
+          type: 'divider',
+        },
+        {
+          type: 'section',
+          block_id: 'selectMember_block',
+          text: {
+            type: 'mrkdwn',
+            text: '이 그룹에 포함될 멤버들을 선택해주세요',
+          },
+          accessory: {
+            action_id: 'selectMember_accessory',
+            type: 'multi_users_select',
+            placeholder: {
+              type: 'plain_text',
+              text: '멤버를 선택해주세요...',
+            },
+          },
+        },
+      ],
+      submit: {
+        type: 'plain_text',
+        text: '그룹 만들기',
+      },
+      private_metadata: JSON.stringify({
+        channel: body.channel_id,
+        user: body.user_id,
+      }),
+    },
+  });
+};
+
 export const renderCommandListEphemeralMessage = async (command: SlashCommand) => {
   const makeDescription = (groupKRName: string, groupName: AllMemberGroupNameType) => {
     if (groupName.includes(allGroupMembersSuffix)) {

@@ -5,6 +5,8 @@ import {
   SlackActionMiddlewareArgs,
   SlackCommandMiddlewareArgs,
   SlackEventMiddlewareArgs,
+  SlackViewAction,
+  SlackViewMiddlewareArgs,
   StringIndexed,
 } from '@slack/bolt';
 
@@ -30,3 +32,6 @@ export type SlackCommandEvent<CustomContext extends StringIndexed = StringIndexe
 
 export type SlackActionEvent<CustomContext extends StringIndexed = StringIndexed> =
   AllMiddlewareArgs<CustomContext> & SlackActionMiddlewareArgs<SlackAction>;
+
+export type SlackViewEvent<CustomContext extends StringIndexed = StringIndexed> =
+  AllMiddlewareArgs<CustomContext> & SlackViewMiddlewareArgs<SlackViewAction>;
