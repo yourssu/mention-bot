@@ -5,12 +5,20 @@ import {
   BaseMemberGroupNameType,
   MemberGroupNameMap,
   allGroupMembersSuffix,
+  allMemberGroupName,
   nonActiveGroupMembersSuffix,
 } from '@/types/group';
+import { LiteralStringUnion } from '@/types/misc';
 import { QueryNotionMembersProps } from '@/utils/member';
 
 export const getPositionByGroupName = (groupName: BaseMemberGroupNameType) => {
   return objectEntries(MemberGroupNameMap).find(([, value]) => value === groupName)?.[0];
+};
+
+export const isNonCustomGroup = (
+  group: LiteralStringUnion<AllMemberGroupNameType>
+): group is AllMemberGroupNameType => {
+  return allMemberGroupName.some((name) => group === name);
 };
 
 export const parseMentionGroupToNotionMembersQuery = (

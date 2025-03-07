@@ -6,7 +6,7 @@ const startSlackBot = async () => {
   const stageMessage = stage === 'production' ? '[프로덕션]' : '[개발]';
 
   await slackApp.start(config.port);
-  slackApp.logger.info(`⚡️ [${stageMessage}] 슬랙 봇이 켜졌어요 (포트: ${config.port})`);
+  slackApp.logger.info(`⚡️ ${stageMessage} 슬랙 봇이 켜졌어요 (포트: ${config.port})`);
 };
 
 const setSlackBotReloader = () => {

@@ -1,7 +1,7 @@
 import { objectValues } from '@toss/utils';
 import { flatMap } from 'es-toolkit';
 
-const groupKeywordSuffix = '@';
+export const groupKeywordSuffix = '@';
 
 export const MemberGroupNameMap = {
   'BACK-END': `${groupKeywordSuffix}be`,

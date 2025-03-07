@@ -1,12 +1,13 @@
 import { ensureSlackMembersCache } from '@/cache/member';
 import { slackApp } from '@/core/slack';
 import { AllMemberGroupNameType } from '@/types/group';
+import { LiteralStringUnion } from '@/types/misc';
 import { SlackMessageEvent } from '@/types/slack';
 import { querySlackMembersByMentionGroup } from '@/utils/member';
 import { toSlackMemberMentionString } from '@/utils/slack';
 
 interface EditMessageAsMentionStringProps {
-  mentionGroups: AllMemberGroupNameType[];
+  mentionGroups: LiteralStringUnion<AllMemberGroupNameType>[];
   message: SlackMessageEvent['message'];
   token: string;
 }
@@ -16,9 +17,9 @@ export const editMessageAsMentionString = async ({
   token,
   mentionGroups,
 }: EditMessageAsMentionStringProps) => {
-  const parseGroupToMentionString = async (group: AllMemberGroupNameType) => {
-    const feMembers = await querySlackMembersByMentionGroup(group);
-    const fullMentions = feMembers.map((member) => toSlackMemberMentionString(member)).join(' ');
+  const parseGroupToMentionString = async (group: LiteralStringUnion<AllMemberGroupNameType>) => {
+    const members = await querySlackMembersByMentionGroup(group);
+    const fullMentions = members.map((member) => toSlackMemberMentionString(member)).join(' ');
     return `*\`${group}\`* (${fullMentions})`;
   };
 

@@ -1,9 +1,11 @@
 import { Member } from '@slack/web-api/dist/types/response/UsersListResponse';
 
 import { getAllNotionMembers, getAllSlackMembers } from '@/apis/member';
+import { customGroups } from '@/cache/group';
 import { AllMemberGroupNameType } from '@/types/group';
 import { NotionMember, NotionMemberPosition, NotionMemberStatusType } from '@/types/member';
-import { parseMentionGroupToNotionMembersQuery } from '@/utils/group';
+import { LiteralStringUnion } from '@/types/misc';
+import { isNonCustomGroup, parseMentionGroupToNotionMembersQuery } from '@/utils/group';
 
 export type QueryNotionMembersProps = {
   position?: NotionMemberPosition;
@@ -27,16 +29,31 @@ export const queryNotionMembers = async ({ position, status }: QueryNotionMember
   return filterByStatus(filterByPosition(members));
 };
 
-export const querySlackMembersByMentionGroup = async (group: AllMemberGroupNameType) => {
-  const query = parseMentionGroupToNotionMembersQuery(group);
-  const notionMembers = await queryNotionMembers(query);
-  const slackMembers = (
-    await Promise.all(
-      notionMembers.map((member) => {
-        return querySlackMemberByName(member.name);
-      })
-    )
-  ).filter(Boolean) as Member[];
+export const querySlackMembersByMentionGroup = async (
+  group: LiteralStringUnion<AllMemberGroupNameType>
+) => {
+  if (isNonCustomGroup(group)) {
+    const query = parseMentionGroupToNotionMembersQuery(group);
+    const notionMembers = await queryNotionMembers(query);
+    const slackMembers = (
+      await Promise.all(
+        notionMembers.map((member) => {
+          return querySlackMemberByName(member.name);
+        })
+      )
+    ).filter(Boolean) as Member[];
+
+    return slackMembers;
+  }
+
+  const allSlackMembers = await getAllSlackMembers();
+  const customGroup = customGroups.get(group);
+
+  const slackMembers = (customGroup?.memberSlackIds ?? [])
+    .map((slackId) => {
+      return allSlackMembers.find((member) => member.id === slackId);
+    })
+    .filter(Boolean) as Member[];
 
   return slackMembers;
 };
