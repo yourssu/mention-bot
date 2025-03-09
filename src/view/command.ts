@@ -1,7 +1,9 @@
 import { SlashCommand } from '@slack/bolt';
-import { objectValues } from '@toss/utils';
+import { objectEntries, objectValues } from '@toss/utils';
 
 import { getAllCustomGroupNames } from '@/apis/group';
+import { getAllSlackMembers } from '@/apis/member';
+import { customGroups } from '@/cache/group';
 import { stage } from '@/config';
 import { slackApp } from '@/core/slack';
 import {
@@ -191,6 +193,51 @@ export const renderCommandListEphemeralMessage = async (command: SlashCommand) =
               },
             },
             ...listBlocks,
+          ]
+        : listBlocks,
+  });
+};
+
+export const renderCustomCommandListEphemeralMessage = async (command: SlashCommand) => {
+  const makeDescription = (memberSlackIds: string[]) => {
+    const slackMemberNames = memberSlackIds.map((slackId) => {
+      const slackMember = allSlackMembers.find(({ id }) => id === slackId);
+      return slackMember?.name;
+    });
+    return slackMemberNames.filter(Boolean).join(', ');
+  };
+
+  const makeBlock = ({ title, description }: { description: string; title: string }) => ({
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: ` - *\`${title}\`* : ${description}`,
+    },
+  });
+
+  const allSlackMembers = await getAllSlackMembers();
+
+  const listBlocks = objectEntries(Object.fromEntries(customGroups)).map(
+    ([groupName, { memberSlackIds }]) =>
+      makeBlock({
+        title: groupName,
+        description: makeDescription(memberSlackIds),
+      })
+  );
+
+  await slackApp.client.chat.postEphemeral({
+    channel: command.channel_id,
+    user: command.user_id,
+    blocks:
+      listBlocks.length === 0
+        ? [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: '생성된 멘션 그룹이 없어요. /add 명령어로 멘션 그룹을 만들 수 있어요.',
+              },
+            },
           ]
         : listBlocks,
   });
