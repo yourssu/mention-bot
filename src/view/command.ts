@@ -1,7 +1,7 @@
 import { SlashCommand } from '@slack/bolt';
 import { objectValues } from '@toss/utils';
 
-import { customGroups } from '@/cache/group';
+import { getAllCustomGroupNames } from '@/apis/group';
 import { stage } from '@/config';
 import { slackApp } from '@/core/slack';
 import {
@@ -75,6 +75,17 @@ export const renderCommandAddCustomGroupModal = async (body: SlashCommand) => {
 };
 
 export const renderCommandDeleteCustomGroupModal = async (body: SlashCommand) => {
+  const allCustomGroupNames = getAllCustomGroupNames();
+
+  if (allCustomGroupNames.length === 0) {
+    await slackApp.client.chat.postEphemeral({
+      channel: body.channel_id,
+      user: body.user_id,
+      text: '삭제할 멘션 그룹이 없어요. /add 명령어로 멘션 그룹을 추가해주세요.',
+    });
+    return;
+  }
+
   await slackApp.client.views.open({
     trigger_id: body.trigger_id,
     view: {
@@ -100,7 +111,7 @@ export const renderCommandDeleteCustomGroupModal = async (body: SlashCommand) =>
               type: 'plain_text',
               text: '멘션 그룹을 선택해주세요...',
             },
-            options: Array.from(customGroups.keys()).map((groupName) => ({
+            options: allCustomGroupNames.map((groupName) => ({
               text: {
                 type: 'plain_text',
                 text: groupName,
