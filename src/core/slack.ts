@@ -1,7 +1,6 @@
 import { App as SlackApp } from '@slack/bolt';
 import { LogLevel, WebClient } from '@slack/web-api';
 
-import { getAllCustomGroupNames } from '@/apis/group';
 import { config } from '@/config';
 import { handleAuthButtonAction } from '@/events/action';
 import {
@@ -10,15 +9,13 @@ import {
   handleDeleteCommand,
   handleListCommand,
 } from '@/events/command';
-import { handleGroupKeywordMessage } from '@/events/message';
+import { detectGroupKeywordMessage, handleGroupKeywordMessage } from '@/events/message';
 import {
   handleAddCustomGroupModalSubmission,
   handleDeleteCustomGroupModalSubmission,
 } from '@/events/view';
 import { authRoute } from '@/routes/auth';
-import { allMemberGroupName } from '@/types/group';
-import { BaseSlackMessageMiddleware, SlackMessageEvent } from '@/types/slack';
-import { getSlackMessageEventObject } from '@/utils/slack';
+import { BaseSlackMessageMiddleware } from '@/types/slack';
 
 export const slackClient = new WebClient(import.meta.env.VITE_BOT_USER_OAUTH_TOKEN, {
   logLevel: LogLevel.WARN,
@@ -43,31 +40,10 @@ export const slackApp = new SlackApp({
   port: config.port,
 });
 
-/* 
-  동적으로 변경되는 커스텀 그룹을 필터링하기 위해 모든 메시지를 받고,
-  미들웨어를 통해 커스텀 그룹 키워드가 포함된 메시지를 직접 처리해요.
-*/
-slackApp.message(async ({ message: slackMessage, next, context }) => {
-  const message = getSlackMessageEventObject(slackMessage as SlackMessageEvent['message']);
-  const text = (message as SlackMessageEvent['message']).text;
-
-  const allGroupNames = [...getAllCustomGroupNames(), ...allMemberGroupName].sort((a, b) => {
-    if (a.includes(b)) {
-      return -1;
-    }
-    if (b.includes(a)) {
-      return 1;
-    }
-    return 0;
-  });
-  const groupRegex = new RegExp(allGroupNames.join('|'), 'g');
-  const matches = text.match(groupRegex);
-
-  if (!!matches?.length) {
-    context.matches = matches; // 매칭한 그룹 키워드를 컨텍스트에 저장해서 다음 미들웨어에서 사용해요.
-    await next();
-  }
-}, handleGroupKeywordMessage as BaseSlackMessageMiddleware);
+slackApp.message(
+  detectGroupKeywordMessage as BaseSlackMessageMiddleware,
+  handleGroupKeywordMessage as BaseSlackMessageMiddleware
+);
 
 slackApp.action('auth', handleAuthButtonAction);
 
