@@ -3,8 +3,8 @@ import { IncomingMessage, ServerResponse } from 'http';
 
 import { getUserAccessTokenByOAuth } from '@/apis/auth';
 import { editMessageAsMentionString } from '@/apis/message';
+import { getPayload } from '@/cache/payload';
 import { userTokens } from '@/cache/token';
-import { AuthURIPayload } from '@/types/auth';
 
 const throw400 = (message: string, res: ServerResponse<IncomingMessage>) => {
   res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -14,19 +14,24 @@ const throw400 = (message: string, res: ServerResponse<IncomingMessage>) => {
 const assertAuthRouteUri = (req: ParamsIncomingMessage, res: ServerResponse<IncomingMessage>) => {
   const params = new URL(`http://${req.headers.host}${req.url}`).searchParams;
   const code = params.get('code');
-  const rawPayload = params.get('payload');
+  const payloadKey = params.get('payload');
 
   if (!code) {
     throw400('잘못된 파라미터입니다.', res);
     return undefined;
   }
 
-  if (!rawPayload) {
+  if (!payloadKey) {
     throw400('잘못된 payload입니다.', res);
     return undefined;
   }
 
-  const payload: AuthURIPayload = JSON.parse(decodeURIComponent(rawPayload));
+  const payload = getPayload(payloadKey);
+
+  if (!payload) {
+    throw400('잘못된 payload입니다.', res);
+    return undefined;
+  }
 
   return { code, payload };
 };

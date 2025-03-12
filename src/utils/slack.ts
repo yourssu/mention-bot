@@ -1,5 +1,6 @@
 import { Member } from '@slack/web-api/dist/types/response/UsersListResponse';
 
+import { putPayload } from '@/cache/payload';
 import { config } from '@/config';
 import { AuthURIPayload } from '@/types/auth';
 import { SlackMessageEvent } from '@/types/slack';
@@ -9,7 +10,8 @@ export const toSlackMemberMentionString = (member: Member) => {
 };
 
 export const getSlackCallbackUrl = (payload: AuthURIPayload) => {
-  const uriPayload = encodeURIComponent(JSON.stringify(payload));
+  const payloadKey = putPayload(payload);
+  const uriPayload = encodeURIComponent(payloadKey);
   return `${config.url}${config.routes.auth}?payload=${uriPayload}`;
 };
 
