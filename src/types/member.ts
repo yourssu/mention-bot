@@ -23,6 +23,5 @@ export type NotionMemberStatusType = 'ACTIVE' | 'NON-ACTIVE' | '졸업';
 export type NotionMember = {
   name: string;
   position: NotionMemberPosition[];
-  realName: string | undefined;
   status: NotionMemberStatusType;
 };

@@ -44,12 +44,13 @@ export const getAllNotionMembers = async () => {
     return normalizedBaseName;
   };
 
-  const transformToMember = (rawMember: any): NotionMember => ({
-    name: getMemberName(rawMember),
-    position: rawMember.properties.POSITION.multi_select.map((position: any) => position.name),
-    status: rawMember.properties.STATUS.select.name,
-    realName: rawMember.properties.NAME.rich_text[0]?.text.content,
-  });
+  const transformToMember = (rawMember: any): NotionMember => {
+    return {
+      name: getMemberName(rawMember),
+      position: rawMember.properties.POSITION.multi_select.map((position: any) => position.name),
+      status: rawMember.properties.STATUS.select.name,
+    };
+  };
 
   const getRequestedMembers = async () => {
     const fetchedMembers = [];
