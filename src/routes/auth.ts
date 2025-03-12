@@ -3,7 +3,7 @@ import { IncomingMessage, ServerResponse } from 'http';
 
 import { getUserAccessTokenByOAuth } from '@/apis/auth';
 import { editMessageAsMentionString } from '@/apis/message';
-import { getPayload } from '@/cache/payload';
+import { popPayload } from '@/cache/payload';
 import { userTokens } from '@/cache/token';
 
 const throw400 = (message: string, res: ServerResponse<IncomingMessage>) => {
@@ -26,7 +26,7 @@ const assertAuthRouteUri = (req: ParamsIncomingMessage, res: ServerResponse<Inco
     return undefined;
   }
 
-  const payload = getPayload(payloadKey);
+  const payload = popPayload(payloadKey);
 
   if (!payload) {
     throw400('잘못된 payload입니다.', res);
