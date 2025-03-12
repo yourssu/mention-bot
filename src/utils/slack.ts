@@ -1,9 +1,12 @@
 import { Member } from '@slack/web-api/dist/types/response/UsersListResponse';
 
-import { putPayload } from '@/cache/payload';
+import { popPayload, putPayload } from '@/cache/payload';
 import { config } from '@/config';
 import { AuthURIPayload } from '@/types/auth';
 import { SlackMessageEvent } from '@/types/slack';
+
+// 페이로드 삭제 시간: 4분
+const PAYLOAD_TIMEOUT_MS = 1000 * 60 * 4;
 
 export const toSlackMemberMentionString = (member: Member) => {
   return `<@${member.id}>`;
@@ -12,6 +15,8 @@ export const toSlackMemberMentionString = (member: Member) => {
 export const getSlackCallbackUrl = (payload: AuthURIPayload) => {
   const payloadKey = putPayload(payload);
   const uriPayload = encodeURIComponent(payloadKey);
+  // PAYLOAD_TIMEOUT_MS가 지나면 캐시된 페이로드 삭제
+  setTimeout(() => popPayload(payloadKey), PAYLOAD_TIMEOUT_MS);
   return `${config.url}${config.routes.auth}?payload=${uriPayload}`;
 };
 

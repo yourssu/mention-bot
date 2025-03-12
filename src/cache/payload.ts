@@ -4,7 +4,7 @@ import { AuthURIPayload } from '@/types/auth';
 
 const payloadStore = new Map<string, AuthURIPayload>();
 
-export const getPayload = (hash: string) => {
+export const popPayload = (hash: string) => {
   const payload = payloadStore.get(hash);
   payloadStore.delete(hash);
   return payload;
