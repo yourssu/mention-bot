@@ -9,7 +9,11 @@ import {
   handleDeleteCommand,
   handleListCommand,
 } from '@/events/command';
-import { detectGroupKeywordMessage, handleGroupKeywordMessage } from '@/events/message';
+import {
+  detectGroupKeywordMessage,
+  handleArchiveMessage,
+  handleGroupKeywordMessage,
+} from '@/events/message';
 import {
   handleAddCustomGroupModalSubmission,
   handleDeleteCustomGroupModalSubmission,
@@ -44,6 +48,8 @@ slackApp.message(
   detectGroupKeywordMessage as BaseSlackMessageMiddleware,
   handleGroupKeywordMessage as BaseSlackMessageMiddleware
 );
+
+slackApp.message(new RegExp(/^!아카이브$/), handleArchiveMessage as BaseSlackMessageMiddleware);
 
 slackApp.action('auth', handleAuthButtonAction);
 
