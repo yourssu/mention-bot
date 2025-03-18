@@ -60,7 +60,7 @@ export const querySlackMembersByMentionGroup = async (
 
 export const querySlackMemberByName = async (name: string) => {
   const normalizeName = (name: string) => {
-    return name.toLowerCase().replace(/\s/g, '');
+    return name.toLowerCase().replace(/\s/g, '').replace('.urssu', '');
   };
 
   const searchFromAllSlackMembers = async () => {
