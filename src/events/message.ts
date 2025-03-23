@@ -1,21 +1,26 @@
 import {
-  BotProfile,
-  FileElement,
-  MessageElement,
-  Reaction,
-} from '@slack/web-api/dist/types/response/ConversationsRepliesResponse';
-
+  baseDownloadFilePath,
+  uploadArchivedMessage,
+  uploadArchivedSlackFiles,
+} from '@/apis/archive';
 import { getAllCustomGroupNames } from '@/apis/group';
-import { editMessageAsMentionString } from '@/apis/message';
+import {
+  editMessageAsMentionString,
+  getAllMessagesInThread,
+  getEditBotMessageItSelfBuilder,
+} from '@/apis/message';
 import { ensureSlackMembersCache } from '@/cache/member';
-import { userTokens } from '@/cache/token';
-import { slackApp } from '@/core/slack';
+import { getUserTokenByMessage } from '@/events/auth';
 import { allMemberGroupName } from '@/types/group';
 import { SlackMessageEvent } from '@/types/slack';
-import { assertNonNullish, assertNonNullishSoftly } from '@/utils/assertion';
-import { querySlackMembersBySlackId } from '@/utils/member';
-import { getSlackMessageEventObject } from '@/utils/slack';
-import { renderAuthEphemeralMessage } from '@/view/auth';
+import {
+  extractOnlyUploadableFiles,
+  transformToArchivedMessage,
+  transformToPreArchivedMessage,
+} from '@/utils/archive';
+import { handleError } from '@/utils/error';
+import { removeDirectoryWithFilesSync } from '@/utils/file';
+import { getSlackMessageEventObject, md } from '@/utils/slack';
 
 /* 
   동적으로 변경되는 커스텀 그룹을 필터링하기 위해 모든 메시지를 받고,
@@ -52,163 +57,79 @@ export const handleGroupKeywordMessage = async ({
   context,
 }: SlackMessageEvent) => {
   const message = getSlackMessageEventObject(slackMessage);
-  const userToken = userTokens.get(message.user);
 
-  if (!userToken) {
-    await renderAuthEphemeralMessage({ message, mentionGroups: context.matches });
-    return;
-  }
-
-  const res = await slackApp.client.auth.test({ token: userToken });
-  if (!res.ok) {
-    await renderAuthEphemeralMessage({ message, mentionGroups: context.matches });
-    return;
-  }
-
-  await editMessageAsMentionString({ message, token: userToken, mentionGroups: context.matches });
+  const token = await getUserTokenByMessage(message);
+  await editMessageAsMentionString({
+    message,
+    token,
+    mentionGroups: context.matches,
+  });
 };
 
 export const handleArchiveMessage = async ({ say, message }: SlackMessageEvent) => {
-  const parseReactions = async (reactions: Reaction[]) => {
-    const result = [];
-    for await (const reaction of reactions) {
-      const { users: userIds, name, count } = reaction;
+  const { channel, thread_ts: threadTs } = message;
 
-      assertNonNullish(userIds);
-      assertNonNullishSoftly(name);
-      assertNonNullishSoftly(count);
-
-      const slackMembers = await querySlackMembersBySlackId(userIds);
-      result.push({
-        name,
-        users: slackMembers.map((member) => member.name ?? '알 수 없음'),
-        count,
-      });
-    }
-
-    return result;
-  };
-
-  const parseUser = async (userId: string) => {
-    const [user] = await querySlackMembersBySlackId([userId]);
-
-    const { id, real_name: realName, profile } = user;
-
-    assertNonNullish(id);
-    assertNonNullish(realName);
-    assertNonNullish(profile?.image_72);
-
-    return {
-      id,
-      isBot: false,
-      name: realName,
-      avatar: profile.image_72,
-    };
-  };
-
-  const parseUserAsBot = (botProfile: BotProfile) => {
-    const { id, name, icons } = botProfile;
-
-    assertNonNullish(id);
-    assertNonNullish(name);
-    assertNonNullish(icons?.image_72);
-
-    return {
-      id,
-      isBot: true,
-      name,
-      avatar: icons.image_72,
-    };
-  };
-
-  const parseFile = (file: FileElement) => {
-    const {
-      url_private: url,
-      url_private_download: downloadUrl,
-      original_w: width,
-      original_h: height,
-      mimetype,
-      filetype,
-      created,
-      id,
-      size,
-    } = file;
-
-    assertNonNullish(url);
-    assertNonNullish(downloadUrl);
-    assertNonNullish(width);
-    assertNonNullish(height);
-    assertNonNullish(mimetype);
-    assertNonNullish(filetype);
-    assertNonNullish(created);
-    assertNonNullish(id);
-    assertNonNullish(size);
-
-    return {
-      url,
-      downloadUrl,
-      width,
-      height,
-      mimetype,
-      filetype,
-      created,
-      id,
-      size,
-    };
-  };
-
-  const transformToArchivedMessage = async (conversationMessage: MessageElement) => {
-    const {
-      user: userId,
-      text,
-      thread_ts: threadTs,
-      ts,
-      edited,
-      reactions,
-      files,
-      bot_profile: botProfile,
-    } = conversationMessage;
-
-    assertNonNullish(userId);
-    assertNonNullish(text);
-    assertNonNullish(ts);
-
-    const user = botProfile ? parseUserAsBot(botProfile) : await parseUser(userId);
-
-    return {
-      user,
-      channel: message.channel,
-      ts,
-      threadTs: threadTs ?? ts,
-      edited: !!edited,
-      reactions: reactions ? await parseReactions(reactions) : undefined,
-      text,
-      files: files?.map(parseFile),
-    };
-  };
-
-  if (!message.thread_ts) {
+  if (!threadTs) {
     await say({
-      channel: message.channel,
+      channel,
       text: '아카이브 기능은 쓰레드에서만 사용할 수 있어요.',
     });
     return;
   }
 
-  // await say({
-  //   channel: message.channel,
-  //   thread_ts: message.thread_ts,
-  //   text: ':loading: *스레드 아카이빙을 시작해요.*',
-  // });
+  const token = await getUserTokenByMessage(message);
 
-  const res = await slackApp.client.conversations.replies({
-    channel: 'C8WCKQ4UE',
-    ts: '1741757625.471679',
-    limit: 1000,
+  await say({
+    channel,
+    thread_ts: threadTs,
+    text: `$:loading: *스레드 아카이빙을 시작해요.*`,
   });
+  const sayAgain = getEditBotMessageItSelfBuilder({
+    channel,
+    ts: threadTs,
+  });
+
+  const rawMessages = await getAllMessagesInThread(channel, threadTs);
 
   await ensureSlackMembersCache();
 
-  // TODO: 이 데이터를 d1에 올리기
-  await Promise.all((res.messages ?? []).map(transformToArchivedMessage));
+  try {
+    const preArchivedMessages = await Promise.all(
+      rawMessages.map((m) => transformToPreArchivedMessage(message.channel, m))
+    );
+
+    await sayAgain(
+      `${md.inlineEmoji('loading')} `,
+      md.bold('(2/4) 미디어 파일을 업로드하고 있어요.')
+    );
+
+    const keyRecord = await uploadArchivedSlackFiles({
+      token,
+      files: extractOnlyUploadableFiles(preArchivedMessages),
+    });
+    const archivedMessages = preArchivedMessages.map((m) =>
+      transformToArchivedMessage(m, keyRecord)
+    );
+
+    await sayAgain(
+      `${md.inlineEmoji('loading')} `,
+      md.bold('(3/4) 스레드 메시지들을 저장하고 있어요.')
+    );
+
+    // Todo: 배치로 만들기
+    for await (const message of archivedMessages) {
+      await uploadArchivedMessage(message);
+    }
+  } catch (e: unknown) {
+    const { message: errorMessage, stack: errorStack } = await handleError(e);
+    await sayAgain(
+      `${md.inlineEmoji('warning')} `,
+      `${md.bold('스레드 아카이빙 중 오류가 발생했어요.')}\n`,
+      md.codeBlock(`${errorMessage}: ${errorStack}`)
+    );
+    removeDirectoryWithFilesSync(baseDownloadFilePath);
+    return;
+  }
+
+  await sayAgain(`${md.inlineEmoji('white_check_mark')} `, md.bold('아카이빙을 완료했어요.'));
 };

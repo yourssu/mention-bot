@@ -1,19 +1,18 @@
-import { stage } from '@/config';
+import { getSlackCallbackUrl } from '@/apis/auth';
 import { slackApp } from '@/core/slack';
-import { AllMemberGroupNameType } from '@/types/group';
+import { AuthURIPayload } from '@/types/auth';
 import { SlackMessageEvent } from '@/types/slack';
-import { getSlackCallbackUrl } from '@/utils/slack';
 
 interface RenderAuthEphemeralMessageProps {
-  mentionGroups: AllMemberGroupNameType[];
   message: SlackMessageEvent['message'];
+  payload: AuthURIPayload;
 }
 
 export const renderAuthEphemeralMessage = async ({
-  mentionGroups,
   message,
+  payload,
 }: RenderAuthEphemeralMessageProps) => {
-  const redirectUri = encodeURIComponent(getSlackCallbackUrl({ message, mentionGroups }));
+  const redirectUri = encodeURIComponent(getSlackCallbackUrl(payload));
   const scopes = encodeURIComponent('chat:write,users:read,users.profile:read');
 
   await slackApp.client.chat.postEphemeral({
@@ -25,7 +24,7 @@ export const renderAuthEphemeralMessage = async ({
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `${stage === 'development' ? '[개발]' : ''}멘션봇이 메시지를 편집하기 위해서 사용자 인증이 필요해요.`,
+          text: '인증이 필요해요. 하단의 버튼을 눌러 멘션봇에게 누군지 알려주세요.',
         },
       },
       {

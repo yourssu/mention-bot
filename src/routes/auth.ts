@@ -2,9 +2,9 @@ import { ParamsIncomingMessage } from '@slack/bolt/dist/receivers/ParamsIncoming
 import { IncomingMessage, ServerResponse } from 'http';
 
 import { getUserAccessTokenByOAuth } from '@/apis/auth';
-import { editMessageAsMentionString } from '@/apis/message';
-import { popPayload } from '@/cache/payload';
 import { userTokens } from '@/cache/token';
+import { AuthURIPayload } from '@/types/auth';
+import { triggerExactEventListenerOnce } from '@/utils/event';
 
 const throw400 = (message: string, res: ServerResponse<IncomingMessage>) => {
   res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -14,26 +14,19 @@ const throw400 = (message: string, res: ServerResponse<IncomingMessage>) => {
 const assertAuthRouteUri = (req: ParamsIncomingMessage, res: ServerResponse<IncomingMessage>) => {
   const params = new URL(`http://${req.headers.host}${req.url}`).searchParams;
   const code = params.get('code');
-  const payloadKey = params.get('payload');
+  const payload = params.get('payload');
 
   if (!code) {
     throw400('잘못된 파라미터입니다.', res);
     return undefined;
   }
 
-  if (!payloadKey) {
-    throw400('잘못된 payload입니다.', res);
-    return undefined;
-  }
-
-  const payload = popPayload(payloadKey);
-
   if (!payload) {
     throw400('잘못된 payload입니다.', res);
     return undefined;
   }
 
-  return { code, payload };
+  return { code, payload: JSON.parse(payload) as AuthURIPayload };
 };
 
 export const authRoute = async (
@@ -56,13 +49,9 @@ export const authRoute = async (
     throw400('토큰 발급에 실패했습니다.', res);
     return;
   }
-  userTokens.set(payload.message.user, token);
+  userTokens.set(payload.user, token);
 
-  await editMessageAsMentionString({
-    message: payload.message,
-    token,
-    mentionGroups: payload.mentionGroups,
-  });
+  triggerExactEventListenerOnce('authorized', payload.eventId, { token });
 
   res.writeHead(302, {
     location: `slack://channel?team=${payload.message.team}&id=${payload.message.channel}`,

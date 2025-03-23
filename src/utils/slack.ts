@@ -1,21 +1,35 @@
-import { Member } from '@slack/web-api/dist/types/response/UsersListResponse';
-
-import { putPayload, setPayloadTimeout } from '@/cache/payload';
-import { config } from '@/config';
-import { AuthURIPayload } from '@/types/auth';
 import { SlackMessageEvent } from '@/types/slack';
 
-export const toSlackMemberMentionString = (member: Member) => {
-  return `<@${member.id}>`;
-};
+type StaticEmojis = 'loading' | 'warning' | 'white_check_mark';
 
-export const getSlackCallbackUrl = (payload: AuthURIPayload) => {
-  const payloadKey = putPayload(payload);
-  const uriPayload = encodeURIComponent(payloadKey);
-
-  setPayloadTimeout(payloadKey);
-
-  return `${config.url}${config.routes.auth}?payload=${uriPayload}`;
+export const md = {
+  bold(text: string): string {
+    return `*${text}*`;
+  },
+  italic(text: string): string {
+    return `_${text}_`;
+  },
+  strikeThrough(text: string): string {
+    return `~${text}~`;
+  },
+  code(text: string): string {
+    return '`' + text + '`';
+  },
+  codeBlock(text: string): string {
+    return '\n```' + text + '```\n';
+  },
+  link(url: string, text: string): string {
+    return `<${url}|${text}>`;
+  },
+  userMention(userId: string): string {
+    return `<@${userId}>`;
+  },
+  channelMention(channelId: string): string {
+    return `<#${channelId}>`;
+  },
+  inlineEmoji(emoji: StaticEmojis): string {
+    return `:${emoji}:`;
+  },
 };
 
 /* 

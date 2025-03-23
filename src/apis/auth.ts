@@ -1,11 +1,16 @@
+import { config } from '@/config';
 import { slackApp } from '@/core/slack';
 import { AuthURIPayload } from '@/types/auth';
-import { getSlackCallbackUrl } from '@/utils/slack';
 
 interface GetUserAccessTokenByOAuthProps {
   code: string;
   payload: AuthURIPayload;
 }
+
+export const getSlackCallbackUrl = (payload: AuthURIPayload) => {
+  const uriPayload = encodeURIComponent(JSON.stringify(payload));
+  return `${config.url}${config.routes.auth}?payload=${uriPayload}`;
+};
 
 export const getUserAccessTokenByOAuth = async ({
   code,

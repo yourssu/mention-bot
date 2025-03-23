@@ -16,8 +16,15 @@ export const assertEnvironmentVariables = () => {
     }
   };
 
+  const assertArchiveServerURL = () => {
+    if (!import.meta.env.VITE_ARCHIVE_SERVER_URL) {
+      throw new Error('VITE_ARCHIVE_SERVER_URL 환경 변수를 설정해주세요.');
+    }
+  };
+
   assertStage();
   assertGCPInstanceIP();
+  assertArchiveServerURL();
 };
 
 const commonConfig = {
