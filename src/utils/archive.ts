@@ -7,6 +7,7 @@ import {
 import { readFileSync } from 'fs';
 import mime from 'mime';
 
+import { ChannelBaseInfo } from '@/apis/channel';
 import { assertNonNullish, assertNonNullishSoftly } from '@/utils/assertion';
 import { querySlackMembersBySlackId } from '@/utils/member';
 
@@ -233,6 +234,36 @@ export const makeFileUploadFormData = ({ id, path }: { id: string; path: string 
   formData.append('id', id);
 
   return formData;
+};
+
+export const makeChannelBaseInfoUploadFormData = (channel: ChannelBaseInfo) => {
+  const formData = new FormData();
+  formData.append('id', channel.id);
+  formData.append('name', channel.name);
+  channel.description && formData.append('description', channel.description);
+
+  return formData;
+};
+
+export const makeThreadInfoUploadFormData = (channel: string, ts: string) => {
+  const formData = new FormData();
+  formData.append('ts', ts);
+  formData.append('channel', channel);
+  formData.append('archivedAt', new Date().toISOString());
+
+  return formData;
+};
+
+export const getHeadMessageInThread = <
+  TMessage extends ArchivedMessageItem | PreArchivedMessageItem,
+>(
+  messages: TMessage[]
+) => {
+  const headMessage = messages.find((m) => m.ts === m.threadTs);
+
+  assertNonNullish(headMessage);
+
+  return headMessage;
 };
 
 export type PreArchivedMessageItem = Awaited<ReturnType<typeof transformToPreArchivedMessage>>;

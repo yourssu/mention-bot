@@ -3,12 +3,15 @@ import { unlinkSync } from 'node:fs';
 import { Readable } from 'node:stream';
 import { ReadableStream } from 'node:stream/web';
 
+import { ChannelBaseInfo } from '@/apis/channel';
 import { archiveClient } from '@/apis/client';
 import {
   ArchivedMessageItem,
   PreArchivedMessageItem,
+  makeChannelBaseInfoUploadFormData,
   makeFileUploadFormData,
   makeMessageUploadFormData,
+  makeThreadInfoUploadFormData,
 } from '@/utils/archive';
 import { assertNonNullish } from '@/utils/assertion';
 import { writeFileEnsureDirectory } from '@/utils/file';
@@ -91,4 +94,18 @@ export const uploadDownloadedSlackFile = async ({ id, path }: UploadDownloadedFi
     body: makeFileUploadFormData({ id, path }),
   });
   return await res.json();
+};
+
+export const uploadChannelInfo = async (channelInfo: ChannelBaseInfo) => {
+  await archiveClient.post('channel/add', {
+    body: makeChannelBaseInfoUploadFormData(channelInfo),
+  });
+};
+
+export const uploadThreadInfo = async (
+  threadInfo: ArchivedMessageItem | PreArchivedMessageItem
+) => {
+  await archiveClient.post('thread/add', {
+    body: makeThreadInfoUploadFormData(threadInfo.channel, threadInfo.ts),
+  });
 };

@@ -2,7 +2,10 @@ import {
   baseDownloadFilePath,
   uploadArchivedMessage,
   uploadArchivedSlackFiles,
+  uploadChannelInfo,
+  uploadThreadInfo,
 } from '@/apis/archive';
+import { getChannelBaseInfo } from '@/apis/channel';
 import { getAllCustomGroupNames } from '@/apis/group';
 import {
   editMessageAsMentionString,
@@ -15,6 +18,7 @@ import { allMemberGroupName } from '@/types/group';
 import { SlackMessageEvent } from '@/types/slack';
 import {
   extractOnlyUploadableFiles,
+  getHeadMessageInThread,
   transformToArchivedMessage,
   transformToPreArchivedMessage,
 } from '@/utils/archive';
@@ -79,14 +83,14 @@ export const handleArchiveMessage = async ({ say, message }: SlackMessageEvent) 
 
   const token = await getUserTokenByMessage(message);
 
-  await say({
+  const botSaid = await say({
     channel,
     thread_ts: threadTs,
-    text: `$:loading: *스레드 아카이빙을 시작해요.*`,
+    text: `${md.inlineEmoji('loading')} ${md.bold('스레드 아카이빙을 시작해요.')}`,
   });
   const sayAgain = getEditBotMessageItSelfBuilder({
-    channel,
-    ts: threadTs,
+    channel: botSaid.channel!,
+    ts: botSaid.ts!,
   });
 
   const rawMessages = await getAllMessagesInThread(channel, threadTs);
@@ -94,9 +98,15 @@ export const handleArchiveMessage = async ({ say, message }: SlackMessageEvent) 
   await ensureSlackMembersCache();
 
   try {
+    const channelInfo = await getChannelBaseInfo(channel);
+    await uploadChannelInfo(channelInfo);
+
     const preArchivedMessages = await Promise.all(
       rawMessages.map((m) => transformToPreArchivedMessage(message.channel, m))
     );
+
+    const headMessage = getHeadMessageInThread(preArchivedMessages);
+    await uploadThreadInfo(headMessage);
 
     await sayAgain(
       `${md.inlineEmoji('loading')} `,
