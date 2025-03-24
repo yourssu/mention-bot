@@ -23,7 +23,7 @@ const parseReactions = async (reactions: Reaction[]) => {
     const slackMembers = await querySlackMembersBySlackId(userIds);
     result.push({
       name,
-      users: slackMembers.map((member) => member.name ?? '알 수 없음'),
+      users: slackMembers.map((member) => member.real_name ?? '알 수 없음'),
       count,
     });
   }
