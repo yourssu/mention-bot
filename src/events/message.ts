@@ -131,11 +131,11 @@ export const handleArchiveMessage = async ({ say, message }: SlackMessageEvent) 
       await uploadArchivedMessage(message);
     }
   } catch (e: unknown) {
-    const { message: errorMessage, stack: errorStack } = await handleError(e);
+    const { message: errorMessage, stack: errorStack, type } = await handleError(e);
     await sayAgain(
       `${md.inlineEmoji('warning')} `,
       `${md.bold('스레드 아카이빙 중 오류가 발생했어요.')}\n`,
-      md.codeBlock(`${errorMessage}: ${errorStack}`)
+      md.codeBlock(`${type} / ${errorMessage}: ${errorStack}`)
     );
     removeDirectoryWithFilesSync(baseDownloadFilePath);
     return;
