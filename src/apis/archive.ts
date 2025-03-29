@@ -104,6 +104,7 @@ export const uploadDownloadedSlackFile = async ({ id, path }: UploadDownloadedFi
   try {
     const res = await archiveClient.put<{ key: string }>('file/upload', {
       body: makeFileUploadFormData({ id, path }),
+      timeout: 1000 * 60 * 5, // 5 minutes
     });
 
     return {
