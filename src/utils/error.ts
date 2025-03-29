@@ -29,15 +29,30 @@ type ErrorResult<TError = unknown> =
 const defaultErrorMessage = '오류가 발생했어요. 잠시 후 다시 시도해 주세요.';
 
 const errorToResult = async <TError = unknown>(error: TError): Promise<ErrorResult<TError>> => {
+  const parseKyErrorMessage = async (e: HTTPError) => {
+    const { type, json, body } = e.response;
+
+    if (!body) {
+      return e.message;
+    }
+
+    if (type.includes('json')) {
+      return (await json<{ message: string }>()).message;
+    }
+
+    if (type.includes('text')) {
+      return await e.response.text();
+    }
+
+    return defaultErrorMessage;
+  };
+
   if (isKyHTTPError(error)) {
-    const message = !error.response.body
-      ? error.message
-      : (await error.response.json<{ message: string }>()).message;
     return {
       type: 'KyHTTPError',
       error,
       stack: error.stack,
-      message,
+      message: await parseKyErrorMessage(error),
     };
   }
   if (isError(error)) {

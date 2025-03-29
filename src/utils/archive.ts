@@ -179,20 +179,21 @@ export const transformToUploadedFileId = (
   files: PreArchivedMessageItem['files'],
   keyRecord: Record<string, string>
 ) => {
-  return files?.map(({ created, filetype, mimetype, name, size, width, height, id }) => {
-    const fileId = keyRecord[id];
-    assertNonNullish(fileId);
-    return {
-      created,
-      filetype,
-      mimetype,
-      name,
-      size,
-      width,
-      height,
-      id: fileId,
-    };
-  });
+  return files
+    ?.filter(({ id }) => !!keyRecord[id])
+    .map(({ created, filetype, mimetype, name, size, width, height, id }) => {
+      const fileId = keyRecord[id];
+      return {
+        created,
+        filetype,
+        mimetype,
+        name,
+        size,
+        width,
+        height,
+        id: fileId,
+      };
+    });
 };
 
 export const transformToArchivedMessage = async (

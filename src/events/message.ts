@@ -71,6 +71,21 @@ export const handleGroupKeywordMessage = async ({
 };
 
 export const handleArchiveMessage = async ({ say, message }: SlackMessageEvent) => {
+  const getFailMessage = (fail: Record<string, string>) => {
+    const failedNames = Object.values(fail);
+
+    if (failedNames.length === 0) {
+      return '';
+    }
+
+    const listMessage = Object.values(fail)
+      .map((name) => `- ${name}`)
+      .join('\n');
+    const codeBlockMessage = md.codeBlock(`100MB 이상인 파일들이에요.\n${listMessage}`);
+
+    return `\n${md.inlineEmoji('warning')} 아래 파일 목록은 크기가 너무 커서 업로드에 실패했어요.\n${codeBlockMessage}`;
+  };
+
   const { channel, thread_ts: threadTs } = message;
 
   if (!threadTs) {
@@ -113,23 +128,32 @@ export const handleArchiveMessage = async ({ say, message }: SlackMessageEvent) 
       md.bold('(2/4) 미디어 파일을 업로드하고 있어요.')
     );
 
-    const keyRecord = await uploadArchivedSlackFiles({
+    const { result: keyRecord, fail } = await uploadArchivedSlackFiles({
       token,
       files: extractOnlyUploadableFiles(preArchivedMessages),
     });
+    const failMessage = getFailMessage(fail);
+
     const archivedMessages = preArchivedMessages.map((m) =>
       transformToArchivedMessage(m, keyRecord)
     );
 
     await sayAgain(
       `${md.inlineEmoji('loading')} `,
-      md.bold('(3/4) 스레드 메시지들을 저장하고 있어요.')
+      md.bold('(3/4) 스레드 메시지들을 저장하고 있어요.'),
+      failMessage
     );
 
     // Todo: 배치로 만들기
     for await (const message of archivedMessages) {
       await uploadArchivedMessage(message);
     }
+
+    await sayAgain(
+      `${md.inlineEmoji('white_check_mark')} `,
+      md.bold('아카이빙을 완료했어요.'),
+      failMessage
+    );
   } catch (e: unknown) {
     const { message: errorMessage, stack: errorStack, type } = await handleError(e);
     await sayAgain(
@@ -140,6 +164,4 @@ export const handleArchiveMessage = async ({ say, message }: SlackMessageEvent) 
     removeDirectoryWithFilesSync(baseDownloadFilePath);
     return;
   }
-
-  await sayAgain(`${md.inlineEmoji('white_check_mark')} `, md.bold('아카이빙을 완료했어요.'));
 };

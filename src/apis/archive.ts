@@ -1,4 +1,4 @@
-import ky from 'ky';
+import ky, { HTTPError } from 'ky';
 import { unlinkSync } from 'node:fs';
 import { Readable } from 'node:stream';
 import { ReadableStream } from 'node:stream/web';
@@ -14,6 +14,7 @@ import {
   makeThreadInfoUploadFormData,
 } from '@/utils/archive';
 import { assertNonNullish } from '@/utils/assertion';
+import { handleError } from '@/utils/error';
 import { writeFileEnsureDirectory } from '@/utils/file';
 
 interface MakeDownloadFilePathProps {
@@ -62,11 +63,12 @@ export const downloadSlackFileIntoLocal = async ({
 };
 
 export const uploadArchivedSlackFiles = async ({ token, files }: UploadArchivedSlackFilesProps) => {
-  const log = (message: string) => {
-    console.log(`[${new Date().toString()}]`, message); // eslint-disable-line no-console
-  };
+  // const log = (message: string) => {
+  //   console.log(`[${new Date().toString()}]`, message); // eslint-disable-line no-console
+  // };
 
   const result: Record<string, string> = {};
+  const fail: Record<string, string> = {};
   for await (const file of files) {
     const { id, name, downloadUrl } = file;
     const path = makeDownloadSlackFilePath({ id, name });
@@ -76,17 +78,20 @@ export const uploadArchivedSlackFiles = async ({ token, files }: UploadArchivedS
       path,
       token,
     });
-    log(`다운로드 완료: ${path}, 업로드 시작`);
-    const { key } = await uploadDownloadedSlackFile({
+    const { key, code } = await uploadDownloadedSlackFile({
       id,
       path,
     });
-    log(`업로드 완료: ${key}`);
-    result[id] = key;
+
+    if (code === 'FILE_TOO_LARGE') {
+      fail[id] = name;
+    } else {
+      result[id] = key;
+    }
 
     unlinkSync(path);
   }
-  return result;
+  return { result, fail };
 };
 
 export const uploadArchivedMessage = async (message: ArchivedMessageItem) => {
@@ -96,10 +101,27 @@ export const uploadArchivedMessage = async (message: ArchivedMessageItem) => {
 };
 
 export const uploadDownloadedSlackFile = async ({ id, path }: UploadDownloadedFileProps) => {
-  const res = await archiveClient.put<{ key: string }>('file/upload', {
-    body: makeFileUploadFormData({ id, path }),
-  });
-  return await res.json();
+  try {
+    const res = await archiveClient.put<{ key: string }>('file/upload', {
+      body: makeFileUploadFormData({ id, path }),
+    });
+
+    return {
+      key: (await res.json()).key,
+      code: 'SUCCESS',
+    } as const;
+  } catch (e) {
+    if (e instanceof HTTPError) {
+      const { type, error } = await handleError(e);
+      if (type === 'KyHTTPError' && error.response.status === 413) {
+        return {
+          key: '',
+          code: 'FILE_TOO_LARGE',
+        } as const;
+      }
+    }
+    throw e;
+  }
 };
 
 export const uploadChannelInfo = async (channelInfo: ChannelBaseInfo) => {
