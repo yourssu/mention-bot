@@ -62,6 +62,10 @@ export const downloadSlackFileIntoLocal = async ({
 };
 
 export const uploadArchivedSlackFiles = async ({ token, files }: UploadArchivedSlackFilesProps) => {
+  const log = (message: string) => {
+    console.log(`[${new Date().toString()}]`, message); // eslint-disable-line no-console
+  };
+
   const result: Record<string, string> = {};
   for await (const file of files) {
     const { id, name, downloadUrl } = file;
@@ -72,10 +76,12 @@ export const uploadArchivedSlackFiles = async ({ token, files }: UploadArchivedS
       path,
       token,
     });
+    log(`다운로드 완료: ${path}, 업로드 시작`);
     const { key } = await uploadDownloadedSlackFile({
       id,
       path,
     });
+    log(`업로드 완료: ${key}`);
     result[id] = key;
 
     unlinkSync(path);

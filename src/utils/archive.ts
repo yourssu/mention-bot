@@ -229,6 +229,8 @@ export const makeFileUploadFormData = ({ id, path }: { id: string; path: string 
     type: mimetype,
   });
 
+  console.log(`[${new Date().toString()}]`, 'blob: ', blob); // eslint-disable-line no-console
+
   const formData = new FormData();
   formData.append('file', blob);
   formData.append('id', id);
