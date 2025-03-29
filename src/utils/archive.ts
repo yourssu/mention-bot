@@ -99,6 +99,8 @@ const parseFile = (file: FileElement) => {
     size,
     filetype,
     name,
+    thumb_video_h: thumbVideoHeight,
+    thumb_video_w: thumbVideoWidth,
   } = file;
 
   assertNonNullish(url);
@@ -110,7 +112,9 @@ const parseFile = (file: FileElement) => {
   assertNonNullish(filetype);
   assertNonNullish(name);
 
-  if (getVariousFileType(file) === 'image') {
+  const fileType = getVariousFileType(file);
+
+  if (fileType === 'image') {
     assertNonNullish(width);
     assertNonNullish(height);
 
@@ -120,6 +124,24 @@ const parseFile = (file: FileElement) => {
       downloadUrl,
       width,
       height,
+      mimetype,
+      filetype,
+      created,
+      id,
+      size,
+    } as const;
+  }
+
+  if (fileType === 'video') {
+    assertNonNullish(thumbVideoWidth);
+    assertNonNullish(thumbVideoHeight);
+
+    return {
+      name,
+      url,
+      downloadUrl,
+      width: thumbVideoWidth,
+      height: thumbVideoHeight,
       mimetype,
       filetype,
       created,
