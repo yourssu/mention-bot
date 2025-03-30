@@ -28,5 +28,6 @@ dist-ssr
 .env
 
 # local database
-db
+db/*
+!db/emoji_standard.json
 static
