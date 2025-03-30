@@ -8,11 +8,16 @@ import { readFileSync } from 'fs';
 import mime from 'mime';
 
 import { ChannelBaseInfo } from '@/apis/channel';
+import { getSlackEmojiSet } from '@/apis/emoji';
 import { assertNonNullish, assertNonNullishSoftly } from '@/utils/assertion';
 import { querySlackMembersBySlackId } from '@/utils/member';
+import { md } from '@/utils/slack';
 
 const parseReactions = async (reactions: Reaction[]) => {
   const result = [];
+
+  const emojiSet = await getSlackEmojiSet();
+
   for await (const reaction of reactions) {
     const { users: userIds, name, count } = reaction;
 
@@ -25,6 +30,7 @@ const parseReactions = async (reactions: Reaction[]) => {
       name,
       users: slackMembers.map((member) => member.real_name ?? '알 수 없음'),
       count,
+      url: emojiSet[name] ?? undefined,
     });
   }
 
@@ -162,6 +168,20 @@ const parseFile = (file: FileElement) => {
   } as const;
 };
 
+export const parseInlineEmojiInText = async (text: string) => {
+  const emojiSet = await getSlackEmojiSet();
+
+  return text.replace(/(:[^:]+:(?::skin-tone-\d+:)?)/g, (match) => {
+    const emojiName = match.slice(1, -1);
+    const emojiUrl = emojiSet[emojiName];
+
+    if (emojiUrl) {
+      return md.inlineEmojiWithLink(emojiName, emojiUrl);
+    }
+    return match;
+  });
+};
+
 export const transformToPreArchivedMessage = async (
   channel: string,
   conversationMessage: MessageElement
@@ -184,7 +204,7 @@ export const transformToPreArchivedMessage = async (
   return {
     channel,
     ts,
-    text,
+    text: await parseInlineEmojiInText(text),
     edited: !!edited,
     threadTs: threadTs ?? ts,
     user: botProfile ? parseUserAsBot(botProfile) : await parseUser(user),

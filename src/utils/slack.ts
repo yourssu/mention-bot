@@ -30,6 +30,13 @@ export const md = {
   inlineEmoji(emoji: StaticEmojis): string {
     return `:${emoji}:`;
   },
+  inlineAnyEmoji(emoji: string): string {
+    return `:${emoji}:`;
+  },
+  // 반드시 아카이빙할때만 사용해요
+  inlineEmojiWithLink(emoji: string, url: string): string {
+    return `:${url}|:${emoji}::`;
+  },
 };
 
 /* 
