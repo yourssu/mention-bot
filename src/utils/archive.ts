@@ -9,6 +9,7 @@ import mime from 'mime';
 
 import { ChannelBaseInfo } from '@/apis/channel';
 import { getSlackEmojiSet } from '@/apis/emoji';
+import { getAllSlackMembers } from '@/apis/member';
 import { assertNonNullish, assertNonNullishSoftly } from '@/utils/assertion';
 import { querySlackMembersBySlackId } from '@/utils/member';
 import { md } from '@/utils/slack';
@@ -168,6 +169,21 @@ const parseFile = (file: FileElement) => {
   } as const;
 };
 
+export const parseMentionInText = async (text: string) => {
+  const members = await getAllSlackMembers();
+
+  return text.replace(/(<@[^>]+>\s*)+/g, (match) => {
+    const userId = match.slice(2, -1);
+    const [member] = members.filter((m) => m.id === userId);
+
+    if (member) {
+      return md.userMention(member.real_name ?? '알 수 없음');
+    }
+
+    return match;
+  });
+};
+
 export const parseInlineEmojiInText = async (text: string) => {
   const emojiSet = await getSlackEmojiSet();
 
@@ -204,7 +220,7 @@ export const transformToPreArchivedMessage = async (
   return {
     channel,
     ts,
-    text: await parseInlineEmojiInText(text),
+    text: await parseInlineEmojiInText(await parseMentionInText(text)),
     edited: !!edited,
     threadTs: threadTs ?? ts,
     user: botProfile ? parseUserAsBot(botProfile) : await parseUser(user),
