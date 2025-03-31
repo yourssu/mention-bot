@@ -13,6 +13,7 @@ import {
   getEditBotMessageItSelfBuilder,
 } from '@/apis/message';
 import { ensureSlackMembersCache } from '@/cache/member';
+import { slackApp } from '@/core/slack';
 import { getUserTokenByMessage } from '@/events/auth';
 import { allMemberGroupName } from '@/types/group';
 import { SlackMessageEvent } from '@/types/slack';
@@ -70,7 +71,30 @@ export const handleGroupKeywordMessage = async ({
   });
 };
 
-export const handleArchiveMessage = async ({ say, message }: SlackMessageEvent) => {
+export const handleArchiveMessage = async ({
+  say,
+  message,
+  silent = false,
+}: { silent?: boolean } & SlackMessageEvent) => {
+  const getPolymorphicSayFn = () => {
+    if (silent) {
+      return async ({ text }: { text: string }) => {
+        await slackApp.client.chat.postEphemeral({
+          channel: message.channel,
+          thread_ts: message.thread_ts,
+          text,
+          user: message.user,
+          attachments: [],
+        });
+        return {
+          channel: message.channel,
+          ts: message.thread_ts,
+        };
+      };
+    }
+    return say;
+  };
+
   const getFailMessage = (fail: Record<string, string>) => {
     const failedNames = Object.values(fail);
 
@@ -98,15 +122,18 @@ export const handleArchiveMessage = async ({ say, message }: SlackMessageEvent) 
 
   const token = await getUserTokenByMessage(message);
 
-  const botSaid = await say({
+  const sayFn = getPolymorphicSayFn();
+  const botSaid = await sayFn({
     channel,
     thread_ts: threadTs,
     text: `${md.inlineEmoji('loading')} ${md.bold('스레드 아카이빙을 시작해요.')}`,
   });
-  const sayAgain = getEditBotMessageItSelfBuilder({
-    channel: botSaid.channel!,
-    ts: botSaid.ts!,
-  });
+  const sayAgain = silent
+    ? (...to: string[]) => sayFn({ text: to.join(' ') })
+    : getEditBotMessageItSelfBuilder({
+        channel: botSaid.channel!,
+        ts: botSaid.ts!,
+      });
 
   const rawMessages = await getAllMessagesInThread(channel, threadTs);
 
@@ -161,6 +188,9 @@ export const handleArchiveMessage = async ({ say, message }: SlackMessageEvent) 
       ),
       failMessage
     );
+
+    // 사용자가 보낸 !조용히아카이브 메시지 삭제
+    silent && slackApp.client.chat.delete({ channel, ts: message.ts, token });
   } catch (e: unknown) {
     const { message: errorMessage, stack: errorStack, type } = await handleError(e);
     await sayAgain(

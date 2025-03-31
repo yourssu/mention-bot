@@ -19,7 +19,7 @@ import {
   handleDeleteCustomGroupModalSubmission,
 } from '@/events/view';
 import { authRoute } from '@/routes/auth';
-import { BaseSlackMessageMiddleware } from '@/types/slack';
+import { BaseSlackMessageMiddleware, SlackMessageEvent } from '@/types/slack';
 
 export const slackClient = new WebClient(import.meta.env.VITE_BOT_USER_OAUTH_TOKEN, {
   logLevel: LogLevel.WARN,
@@ -50,6 +50,9 @@ slackApp.message(
 );
 
 slackApp.message(new RegExp(/^!아카이브$/), handleArchiveMessage as BaseSlackMessageMiddleware);
+slackApp.message(new RegExp(/^!조용히아카이브$/), (props) =>
+  handleArchiveMessage({ ...(props as SlackMessageEvent), silent: true })
+);
 
 slackApp.action('auth', handleAuthButtonAction);
 
