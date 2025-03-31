@@ -152,6 +152,13 @@ export const handleArchiveMessage = async ({ say, message }: SlackMessageEvent) 
     await sayAgain(
       `${md.inlineEmoji('white_check_mark')} `,
       md.bold('아카이빙을 완료했어요.'),
+      ' ',
+      md.bold(
+        md.link(
+          `${import.meta.env.VITE_ARCHIVE_CLIENT_PROD_URL}/archives/${channel}/${threadTs}`,
+          '[아카이브 링크]'
+        )
+      ),
       failMessage
     );
   } catch (e: unknown) {

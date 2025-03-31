@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+  readonly VITE_ARCHIVE_CLIENT_PROD_URL: string;
   readonly VITE_ARCHIVE_SERVER_URL: string;
   readonly VITE_BOT_USER_OAUTH_TOKEN: string;
   readonly VITE_GCP_INSTANCE_IP: string;
