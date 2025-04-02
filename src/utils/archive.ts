@@ -172,7 +172,7 @@ const parseFile = (file: FileElement) => {
 export const parseMentionInText = async (text: string) => {
   const members = await getAllSlackMembers();
 
-  return text.replace(/(<@[^>]+>\s*)+/g, (match) => {
+  return text.replace(/<@[^>]+>/g, (match) => {
     const userId = match.trim().slice(2, -1);
     const [member] = members.filter((m) => m.id === userId);
 
