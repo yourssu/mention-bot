@@ -12,6 +12,7 @@ import {
   getAllMessagesInThread,
   getEditBotMessageItSelfBuilder,
 } from '@/apis/message';
+import { ensureSlackEmojiSetCache } from '@/cache/emoji';
 import { ensureSlackMembersCache } from '@/cache/member';
 import { slackApp } from '@/core/slack';
 import { getUserTokenByMessage } from '@/events/auth';
@@ -138,6 +139,7 @@ export const handleArchiveMessage = async ({
   const rawMessages = await getAllMessagesInThread(channel, threadTs);
 
   await ensureSlackMembersCache();
+  await ensureSlackEmojiSetCache();
 
   try {
     const channelInfo = await getChannelBaseInfo(channel);
