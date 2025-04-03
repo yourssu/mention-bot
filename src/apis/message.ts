@@ -21,11 +21,11 @@ export const getEditBotMessageItSelfBuilder = ({
   channel,
   ts,
 }: GetEditBotMessageItSelfBuilderProps) => {
-  return async (...to: string[]) => {
+  return async (...to: (string | undefined)[]) => {
     await slackApp.client.chat.update({
       channel,
       ts,
-      text: to.join(''),
+      text: to.filter(Boolean).join(''),
       token: import.meta.env.VITE_BOT_USER_OAUTH_TOKEN,
     });
   };

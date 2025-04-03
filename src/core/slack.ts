@@ -1,8 +1,12 @@
 import { App as SlackApp } from '@slack/bolt';
 import { LogLevel, WebClient } from '@slack/web-api';
 
+import { archiveClient } from '@/apis/client';
+import { ensureSlackEmojiSetCache } from '@/cache/emoji';
+import { ensureSlackMembersCache } from '@/cache/member';
 import { config, stage } from '@/config';
 import { handleAuthButtonAction } from '@/events/action';
+import { getUserTokenByMessage } from '@/events/auth';
 import {
   handleAddComand,
   handleCustomListCommand,
@@ -20,6 +24,7 @@ import {
 } from '@/events/view';
 import { authRoute } from '@/routes/auth';
 import { BaseSlackMessageMiddleware, SlackMessageEvent } from '@/types/slack';
+import { getSlackMessageEventObject, md } from '@/utils/slack';
 
 export const slackClient = new WebClient(import.meta.env.VITE_BOT_USER_OAUTH_TOKEN, {
   logLevel: LogLevel.WARN,
@@ -53,22 +58,68 @@ slackApp.message(new RegExp(/^!아카이브$/), handleArchiveMessage as BaseSlac
 slackApp.message(new RegExp(/^!조용히아카이브$/), (props) =>
   handleArchiveMessage({ ...(props as SlackMessageEvent), silent: true })
 );
-slackApp.message(new RegExp(/^!강제아카이브$/), async (props) => {
+slackApp.message(new RegExp(/^!아카이브갱신$/), async (props) => {
+  const getAllArchivedChannelThreadTsRecord = async () => {
+    const channelIds = (await archiveClient.get<{ id: string }[]>('channels').json()).map(
+      (v) => v.id
+    );
+    return (
+      await Promise.all(
+        channelIds.map(async (id) => {
+          const tss = (await archiveClient.get<{ ts: string }[]>(`${id}/threads`).json()).map(
+            (v) => v.ts
+          );
+          return tss.map((ts) => ({ channel: id, thread_ts: ts }));
+        })
+      )
+    ).flat();
+  };
+
   if (stage === 'production') {
     return;
   }
 
-  const forceArchiveTarget = {
-    ts: '',
-    channel: '',
-    thread_ts: '',
+  const message = getSlackMessageEventObject(props.message as SlackMessageEvent['message']);
+
+  await getUserTokenByMessage(message);
+
+  // 아카이빙할 대상들이에요. (현재 아카이빙된 모든 녀석들)
+  const forceArchiveTargets = await getAllArchivedChannelThreadTsRecord();
+  await props.say({
+    text: [
+      md.inlineEmoji('loading'),
+      md.bold(`총 ${forceArchiveTargets.length}개의 아카이빙된 스레드를 갱신해요.`),
+    ].join(' '),
+    thread_ts: message.thread_ts,
+    channel: message.channel,
+  });
+
+  // 아카이빙 메시지를 어디로 보낼지 결정해요.
+  const sendTarget = {
+    channel: message.channel,
+    thread_ts: message.thread_ts ?? '',
+    user: message.user,
   };
 
-  const newProps = {
-    ...props,
-    message: { ...props.message, ...forceArchiveTarget },
-  } as SlackMessageEvent;
-  handleArchiveMessage({ ...newProps, silent: true });
+  await ensureSlackEmojiSetCache();
+  await ensureSlackMembersCache();
+
+  await Promise.all(
+    forceArchiveTargets.map(async (target) => {
+      const newProps = {
+        ...props,
+        message: { ...message, ...target },
+      } as SlackMessageEvent;
+
+      await handleArchiveMessage({ ...newProps, forceSendTarget: sendTarget });
+    })
+  );
+
+  await props.say({
+    text: [md.inlineEmoji('white_check_mark'), md.bold('갱신이 완료됐어요!')].join(' '),
+    thread_ts: message.thread_ts,
+    channel: message.channel,
+  });
 });
 
 slackApp.action('auth', handleAuthButtonAction);

@@ -27,7 +27,7 @@ import {
 } from '@/utils/archive';
 import { handleError } from '@/utils/error';
 import { removeDirectoryWithFilesSync } from '@/utils/file';
-import { getSlackMessageEventObject, md } from '@/utils/slack';
+import { getOriginSlackThreadLink, getSlackMessageEventObject, md } from '@/utils/slack';
 
 /* 
   동적으로 변경되는 커스텀 그룹을 필터링하기 위해 모든 메시지를 받고,
@@ -77,24 +77,46 @@ export const handleArchiveMessage = async ({
   say,
   message,
   silent = false,
-}: { silent?: boolean } & SlackMessageEvent) => {
+  forceSendTarget,
+}: {
+  forceSendTarget?: { channel: string; thread_ts: string; user: string }; // eslint-disable-line @typescript-eslint/naming-convention
+  silent?: boolean;
+} & SlackMessageEvent) => {
+  const sayTextPrefix = md.link(
+    getOriginSlackThreadLink(message.channel, message.thread_ts ?? ''),
+    md.bold('[스레드] ')
+  );
+
+  const getPolymorphicSayTarget = () => {
+    if (forceSendTarget) {
+      return forceSendTarget;
+    }
+    return message;
+  };
+
   const getPolymorphicSayFn = () => {
+    const sayTarget = getPolymorphicSayTarget();
     if (silent) {
       return async ({ text }: { text: string }) => {
         await slackApp.client.chat.postEphemeral({
-          channel: message.channel,
-          thread_ts: message.thread_ts,
+          channel: sayTarget.channel,
+          thread_ts: sayTarget.thread_ts,
           text,
-          user: message.user,
+          user: sayTarget.user,
           attachments: [],
         });
         return {
-          channel: message.channel,
-          ts: message.thread_ts,
+          channel: sayTarget.channel,
+          ts: sayTarget.thread_ts,
         };
       };
     }
-    return say;
+    return async ({ text }: { text: string }) =>
+      say({
+        channel: sayTarget.channel,
+        thread_ts: sayTarget.thread_ts,
+        text,
+      });
   };
 
   const getFailMessage = (fail: Record<string, string>) => {
@@ -112,38 +134,59 @@ export const handleArchiveMessage = async ({
     return `\n${md.inlineEmoji('warning')} 아래 파일 목록은 크기가 너무 커서 업로드에 실패했어요.\n${codeBlockMessage}`;
   };
 
-  const { channel, thread_ts: threadTs, ts } = message;
+  const prepareArchiving = async () => {
+    const sayFn = getPolymorphicSayFn();
+    const sayTarget = getPolymorphicSayTarget();
 
-  if (!threadTs) {
-    await say({
-      channel,
-      text: '아카이브 기능은 쓰레드에서만 사용할 수 있어요.',
+    const { channel, ts, thread_ts: threadTs } = message;
+
+    if (!threadTs) {
+      await sayFn({
+        text: '아카이브 기능은 쓰레드에서만 사용할 수 있어요.',
+      });
+      return undefined;
+    }
+
+    const token = await getUserTokenByMessage({
+      ...message,
+      channel: sayTarget.channel,
+      thread_ts: sayTarget.thread_ts,
     });
+
+    silent && slackApp.client.chat.delete({ channel, ts, token });
+
+    const botSaid = await sayFn({
+      text: [sayTextPrefix, md.inlineEmoji('loading'), md.bold('스레드 아카이빙을 시작해요.')].join(
+        ' '
+      ),
+    });
+
+    const sayAgain = silent
+      ? (...to: string[]) => sayFn({ text: to.join(' ') })
+      : getEditBotMessageItSelfBuilder({
+          channel: botSaid.channel!,
+          ts: botSaid.ts!,
+        });
+
+    await ensureSlackMembersCache();
+    await ensureSlackEmojiSetCache();
+
+    return {
+      token,
+      sayAgain,
+      channel,
+      threadTs,
+    };
+  };
+
+  const prepare = await prepareArchiving();
+  if (!prepare) {
     return;
   }
 
-  const token = await getUserTokenByMessage(message);
-
-  // 사용자가 보낸 !조용히아카이브 메시지 삭제
-  silent && slackApp.client.chat.delete({ channel, ts, token });
-
-  const sayFn = getPolymorphicSayFn();
-  const botSaid = await sayFn({
-    channel,
-    thread_ts: threadTs,
-    text: `${md.inlineEmoji('loading')} ${md.bold('스레드 아카이빙을 시작해요.')}`,
-  });
-  const sayAgain = silent
-    ? (...to: string[]) => sayFn({ text: to.join(' ') })
-    : getEditBotMessageItSelfBuilder({
-        channel: botSaid.channel!,
-        ts: botSaid.ts!,
-      });
+  const { token, sayAgain, channel, threadTs } = prepare;
 
   const rawMessages = await getAllMessagesInThread(channel, threadTs);
-
-  await ensureSlackMembersCache();
-  await ensureSlackEmojiSetCache();
 
   try {
     const channelInfo = await getChannelBaseInfo(channel);
@@ -158,6 +201,7 @@ export const handleArchiveMessage = async ({
     await uploadThreadInfo(headMessage, threadMetadata);
 
     await sayAgain(
+      sayTextPrefix,
       `${md.inlineEmoji('loading')} `,
       md.bold('(2/4) 미디어 파일을 업로드하고 있어요.')
     );
@@ -173,6 +217,7 @@ export const handleArchiveMessage = async ({
     );
 
     await sayAgain(
+      sayTextPrefix,
       `${md.inlineEmoji('loading')} `,
       md.bold('(3/4) 스레드 메시지들을 저장하고 있어요.'),
       failMessage
@@ -184,6 +229,7 @@ export const handleArchiveMessage = async ({
     }
 
     await sayAgain(
+      sayTextPrefix,
       `${md.inlineEmoji('white_check_mark')} `,
       md.bold('아카이빙을 완료했어요.'),
       ' ',
@@ -198,6 +244,7 @@ export const handleArchiveMessage = async ({
   } catch (e: unknown) {
     const { message: errorMessage, stack: errorStack, type } = await handleError(e);
     await sayAgain(
+      sayTextPrefix,
       `${md.inlineEmoji('warning')} `,
       `${md.bold('스레드 아카이빙 중 오류가 발생했어요.')}\n`,
       md.codeBlock(`${type} / ${errorMessage}: ${errorStack}`)

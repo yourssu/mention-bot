@@ -47,3 +47,7 @@ export const getSlackMessageEventObject = (message: SlackMessageEvent['message']
     ? (message.message as SlackMessageEvent['message'])
     : message;
 };
+
+export const getOriginSlackThreadLink = (channel: string, threadTs: string) => {
+  return `https://yourssu.slack.com/archives/${channel}/p${threadTs.replace('.', '')}`;
+};
