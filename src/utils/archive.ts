@@ -186,8 +186,9 @@ export const parseMentionInText = async (text: string) => {
 
 export const parseInlineEmojiInText = async (text: string) => {
   const emojiSet = await getSlackEmojiSet();
+  const regex = /(?<!https?:)(?<!\/):([^:\/]+):(?::skin-tone-\d+:)?/g;
 
-  return text.replace(/(:[^:]+:(?::skin-tone-\d+:)?)/g, (match) => {
+  return text.replace(regex, (match) => {
     const emojiName = match.slice(1, -1);
     const emojiUrl = emojiSet[emojiName];
 
