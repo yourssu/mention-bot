@@ -8,6 +8,7 @@ import { archiveClient } from '@/apis/client';
 import {
   ArchivedMessageItem,
   PreArchivedMessageItem,
+  ThreadMetadata,
   makeChannelBaseInfoUploadFormData,
   makeFileUploadFormData,
   makeMessageUploadFormData,
@@ -132,9 +133,14 @@ export const uploadChannelInfo = async (channelInfo: ChannelBaseInfo) => {
 };
 
 export const uploadThreadInfo = async (
-  threadInfo: ArchivedMessageItem | PreArchivedMessageItem
+  threadInfo: ArchivedMessageItem | PreArchivedMessageItem,
+  metadata: ThreadMetadata
 ) => {
   await archiveClient.post('thread/add', {
-    body: makeThreadInfoUploadFormData(threadInfo.channel, threadInfo.ts),
+    body: makeThreadInfoUploadFormData({
+      channel: threadInfo.channel,
+      ts: threadInfo.ts,
+      metadata,
+    }),
   });
 };

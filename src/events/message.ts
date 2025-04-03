@@ -21,6 +21,7 @@ import { SlackMessageEvent } from '@/types/slack';
 import {
   extractOnlyUploadableFiles,
   getHeadMessageInThread,
+  getThreadMessagesMetadata,
   transformToArchivedMessage,
   transformToPreArchivedMessage,
 } from '@/utils/archive';
@@ -153,7 +154,8 @@ export const handleArchiveMessage = async ({
     );
 
     const headMessage = getHeadMessageInThread(preArchivedMessages);
-    await uploadThreadInfo(headMessage);
+    const threadMetadata = await getThreadMessagesMetadata(preArchivedMessages);
+    await uploadThreadInfo(headMessage, threadMetadata);
 
     await sayAgain(
       `${md.inlineEmoji('loading')} `,

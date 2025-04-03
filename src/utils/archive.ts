@@ -306,11 +306,20 @@ export const makeChannelBaseInfoUploadFormData = (channel: ChannelBaseInfo) => {
   return formData;
 };
 
-export const makeThreadInfoUploadFormData = (channel: string, ts: string) => {
+export const makeThreadInfoUploadFormData = ({
+  ts,
+  channel,
+  metadata,
+}: {
+  channel: string;
+  metadata: ThreadMetadata;
+  ts: string;
+}) => {
   const formData = new FormData();
   formData.append('ts', ts);
   formData.append('channel', channel);
   formData.append('archivedAt', new Date().toISOString());
+  formData.append('userAvatars', JSON.stringify(metadata.userAvatars));
 
   return formData;
 };
@@ -327,5 +336,25 @@ export const getHeadMessageInThread = <
   return headMessage;
 };
 
+export const getThreadMessagesMetadata = async <
+  TMessage extends ArchivedMessageItem | PreArchivedMessageItem,
+>(
+  messages: TMessage[]
+) => {
+  const getUniqueUserAvatars = () => {
+    const uniqueAvatars = new Map<string, string>();
+    messages.forEach((message) => {
+      uniqueAvatars.set(message.user.id, message.user.avatar);
+    });
+    return [...uniqueAvatars.values()];
+  };
+
+  return {
+    userAvatars: getUniqueUserAvatars(),
+    messagesAmount: messages.length,
+  };
+};
+
 export type PreArchivedMessageItem = Awaited<ReturnType<typeof transformToPreArchivedMessage>>;
 export type ArchivedMessageItem = Awaited<ReturnType<typeof transformToArchivedMessage>>;
+export type ThreadMetadata = Awaited<ReturnType<typeof getThreadMessagesMetadata>>;
