@@ -112,7 +112,7 @@ export const handleArchiveMessage = async ({
     return `\n${md.inlineEmoji('warning')} 아래 파일 목록은 크기가 너무 커서 업로드에 실패했어요.\n${codeBlockMessage}`;
   };
 
-  const { channel, thread_ts: threadTs } = message;
+  const { channel, thread_ts: threadTs, ts } = message;
 
   if (!threadTs) {
     await say({
@@ -125,7 +125,7 @@ export const handleArchiveMessage = async ({
   const token = await getUserTokenByMessage(message);
 
   // 사용자가 보낸 !조용히아카이브 메시지 삭제
-  silent && slackApp.client.chat.delete({ channel, ts: message.ts, token });
+  silent && slackApp.client.chat.delete({ channel, ts, token });
 
   const sayFn = getPolymorphicSayFn();
   const botSaid = await sayFn({
@@ -150,7 +150,7 @@ export const handleArchiveMessage = async ({
     await uploadChannelInfo(channelInfo);
 
     const preArchivedMessages = await Promise.all(
-      rawMessages.map((m) => transformToPreArchivedMessage(message.channel, m))
+      rawMessages.map((m) => transformToPreArchivedMessage(channel, m))
     );
 
     const headMessage = getHeadMessageInThread(preArchivedMessages);

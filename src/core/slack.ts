@@ -1,7 +1,7 @@
 import { App as SlackApp } from '@slack/bolt';
 import { LogLevel, WebClient } from '@slack/web-api';
 
-import { config } from '@/config';
+import { config, stage } from '@/config';
 import { handleAuthButtonAction } from '@/events/action';
 import {
   handleAddComand,
@@ -53,6 +53,23 @@ slackApp.message(new RegExp(/^!아카이브$/), handleArchiveMessage as BaseSlac
 slackApp.message(new RegExp(/^!조용히아카이브$/), (props) =>
   handleArchiveMessage({ ...(props as SlackMessageEvent), silent: true })
 );
+slackApp.message(new RegExp(/^!강제아카이브$/), async (props) => {
+  if (stage === 'production') {
+    return;
+  }
+
+  const forceArchiveTarget = {
+    ts: '',
+    channel: '',
+    thread_ts: '',
+  };
+
+  const newProps = {
+    ...props,
+    message: { ...props.message, ...forceArchiveTarget },
+  } as SlackMessageEvent;
+  handleArchiveMessage({ ...newProps, silent: true });
+});
 
 slackApp.action('auth', handleAuthButtonAction);
 
