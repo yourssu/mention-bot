@@ -319,7 +319,7 @@ export const makeThreadInfoUploadFormData = ({
   formData.append('ts', ts);
   formData.append('channel', channel);
   formData.append('archivedAt', new Date().toISOString());
-  formData.append('userAvatars', JSON.stringify(metadata.userAvatars));
+  formData.append('metadata', JSON.stringify(metadata));
 
   return formData;
 };
