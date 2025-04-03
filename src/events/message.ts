@@ -123,6 +123,9 @@ export const handleArchiveMessage = async ({
 
   const token = await getUserTokenByMessage(message);
 
+  // 사용자가 보낸 !조용히아카이브 메시지 삭제
+  silent && slackApp.client.chat.delete({ channel, ts: message.ts, token });
+
   const sayFn = getPolymorphicSayFn();
   const botSaid = await sayFn({
     channel,
@@ -190,9 +193,6 @@ export const handleArchiveMessage = async ({
       ),
       failMessage
     );
-
-    // 사용자가 보낸 !조용히아카이브 메시지 삭제
-    silent && slackApp.client.chat.delete({ channel, ts: message.ts, token });
   } catch (e: unknown) {
     const { message: errorMessage, stack: errorStack, type } = await handleError(e);
     await sayAgain(
