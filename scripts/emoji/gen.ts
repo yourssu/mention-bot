@@ -10,12 +10,16 @@ function main() {
   const result = {};
 
   for (const emoji of JSON.parse(emojiData)) {
-    const { name, unicode, skinVariations } = emoji;
+    const { name, unicode, skinVariations, obsoletes } = emoji;
 
     result[name] = genUrl(unicode);
 
     if (!skinVariations) {
       continue;
+    }
+
+    if (!!obsoletes) {
+      result[obsoletes] = genUrl(unicode.split('-')[0]);
     }
 
     for (const skinData of Object.values(skinVariations)) {
