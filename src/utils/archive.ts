@@ -227,7 +227,12 @@ export const parseAttachment = (attachment: Attachment) => {
     title,
     title_link: titleLink,
     service_name: serviceName,
+    is_app_unfurl: isAppUnfurl,
   } = attachment;
+
+  if (isAppUnfurl) {
+    return undefined;
+  }
 
   assertNonNullish(fromUrl);
 
@@ -355,7 +360,9 @@ export const transformToPreArchivedMessage = async (
     user: botProfile ? parseUserAsBot(botProfile) : await parseUser(user),
     reactions: reactions ? await parseReactions(reactions) : undefined,
     files: files?.filter(isUploadableFileType).map(parseFile),
-    attachments: attachments?.map(parseAttachment),
+    attachments: attachments?.map(parseAttachment).filter(Boolean) as
+      | Array<NonNullable<ReturnType<typeof parseAttachment>>>
+      | undefined,
   };
 };
 
