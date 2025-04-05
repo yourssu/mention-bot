@@ -1,4 +1,5 @@
 import {
+  Attachment,
   BotProfile,
   FileElement,
   MessageElement,
@@ -199,6 +200,132 @@ export const parseInlineEmojiInText = async (text: string) => {
   });
 };
 
+export const parseAttachment = (attachment: Attachment) => {
+  const getAttachmentType = ({
+    serviceName,
+    fromUrl,
+  }: {
+    fromUrl: string;
+    serviceName: string | undefined;
+  }) => {
+    if (fromUrl.match(/https:\/\/yourssu.slack.com/g)) {
+      return 'slack';
+    }
+
+    if (serviceName?.toLowerCase() === 'youtube') {
+      return 'youtube';
+    }
+
+    return 'link';
+  };
+
+  const {
+    from_url: fromUrl,
+    service_icon: serviceIcon,
+    original_url: originalUrl,
+    text,
+    title,
+    title_link: titleLink,
+    service_name: serviceName,
+  } = attachment;
+
+  assertNonNullish(fromUrl);
+
+  const attachmentType = getAttachmentType({
+    serviceName,
+    fromUrl,
+  });
+
+  if (attachmentType === 'slack') {
+    const {
+      author_name: authorName,
+      author_link: authorLink,
+      author_icon: authorIcon,
+      footer,
+      ts,
+    } = attachment;
+
+    assertNonNullish(ts);
+    assertNonNullish(authorName);
+    assertNonNullish(authorLink);
+    assertNonNullish(authorIcon);
+    assertNonNullish(footer);
+
+    return {
+      type: attachmentType,
+      url: fromUrl,
+      authorName,
+      authorLink,
+      authorIcon,
+      footer,
+      text,
+      ts,
+    } as const;
+  }
+
+  assertNonNullish(originalUrl);
+  assertNonNullish(title);
+  assertNonNullish(titleLink);
+  assertNonNullish(serviceName);
+
+  if (attachmentType === 'link') {
+    return {
+      type: attachmentType,
+      title,
+      url: originalUrl,
+      fromUrl,
+      serviceIcon,
+      text,
+      titleLink,
+      serviceName,
+      imageUrl: attachment.image_url,
+      imageWidth: attachment.image_width,
+      imageHeight: attachment.image_height,
+    } as const;
+  }
+
+  const {
+    thumb_url: thumbUrl,
+    thumb_width: thumbWidth,
+    thumb_height: thumbHeight,
+    video_html: videoHTML,
+    video_html_width: videoHTMLWidth,
+    video_html_height: videoHTMLHeight,
+    author_name: authorName,
+    author_link: authorLink,
+    service_url: serviceUrl,
+  } = attachment;
+
+  assertNonNullish(thumbUrl);
+  assertNonNullish(thumbWidth);
+  assertNonNullish(thumbHeight);
+  assertNonNullish(videoHTML);
+  assertNonNullish(videoHTMLWidth);
+  assertNonNullish(videoHTMLHeight);
+  assertNonNullish(authorName);
+  assertNonNullish(authorLink);
+  assertNonNullish(serviceUrl);
+
+  return {
+    type: attachmentType,
+    title,
+    url: originalUrl,
+    thumbUrl,
+    serviceUrl,
+    serviceIcon,
+    text,
+    titleLink,
+    serviceName,
+    thumbHeight,
+    thumbWidth,
+    videoHTML,
+    videoHTMLWidth,
+    videoHTMLHeight,
+    authorName,
+    authorLink,
+  } as const;
+};
+
 export const transformToPreArchivedMessage = async (
   channel: string,
   conversationMessage: MessageElement
@@ -212,6 +339,7 @@ export const transformToPreArchivedMessage = async (
     reactions,
     files,
     bot_profile: botProfile,
+    attachments,
   } = conversationMessage;
 
   assertNonNullish(user);
@@ -227,6 +355,7 @@ export const transformToPreArchivedMessage = async (
     user: botProfile ? parseUserAsBot(botProfile) : await parseUser(user),
     reactions: reactions ? await parseReactions(reactions) : undefined,
     files: files?.filter(isUploadableFileType).map(parseFile),
+    attachments: attachments?.map(parseAttachment),
   };
 };
 
@@ -275,6 +404,7 @@ export const makeMessageUploadFormData = (message: ArchivedMessageItem) => {
   formData.append('text', message.text);
   message.files && formData.append('files', JSON.stringify(message.files));
   message.reactions && formData.append('reactions', JSON.stringify(message.reactions));
+  message.attachments && formData.append('attachments', JSON.stringify(message.attachments));
 
   return formData;
 };
