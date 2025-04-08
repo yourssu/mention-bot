@@ -228,6 +228,7 @@ export const parseAttachment = (attachment: Attachment) => {
     title_link: titleLink,
     service_name: serviceName,
     is_app_unfurl: isAppUnfurl,
+    author_name: authorName,
   } = attachment;
 
   if (isAppUnfurl) {
@@ -242,13 +243,7 @@ export const parseAttachment = (attachment: Attachment) => {
   });
 
   if (attachmentType === 'slack') {
-    const {
-      author_name: authorName,
-      author_link: authorLink,
-      author_icon: authorIcon,
-      footer,
-      ts,
-    } = attachment;
+    const { author_link: authorLink, author_icon: authorIcon, footer, ts } = attachment;
 
     assertNonNullish(ts);
     assertNonNullish(authorName);
@@ -271,9 +266,11 @@ export const parseAttachment = (attachment: Attachment) => {
   assertNonNullish(originalUrl);
   assertNonNullish(title);
   assertNonNullish(titleLink);
-  assertNonNullish(serviceName);
 
   if (attachmentType === 'link') {
+    const fallbackedServiceName = serviceName ?? authorName;
+    assertNonNullish(fallbackedServiceName);
+
     return {
       type: attachmentType,
       title,
@@ -282,7 +279,7 @@ export const parseAttachment = (attachment: Attachment) => {
       serviceIcon,
       text,
       titleLink,
-      serviceName,
+      serviceName: fallbackedServiceName,
       imageUrl: attachment.image_url,
       imageWidth: attachment.image_width,
       imageHeight: attachment.image_height,
@@ -296,11 +293,11 @@ export const parseAttachment = (attachment: Attachment) => {
     video_html: videoHTML,
     video_html_width: videoHTMLWidth,
     video_html_height: videoHTMLHeight,
-    author_name: authorName,
     author_link: authorLink,
     service_url: serviceUrl,
   } = attachment;
 
+  assertNonNullish(serviceName);
   assertNonNullish(thumbUrl);
   assertNonNullish(thumbWidth);
   assertNonNullish(thumbHeight);
