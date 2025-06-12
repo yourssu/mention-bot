@@ -413,7 +413,15 @@ export const makeMessageUploadFormData = (message: ArchivedMessageItem) => {
   return formData;
 };
 
-export const makeFileUploadFormData = ({ id, path }: { id: string; path: string }) => {
+export const makeFileUploadFormData = ({
+  id,
+  path,
+  forceUpload,
+}: {
+  forceUpload: boolean;
+  id: string;
+  path: string;
+}) => {
   const file = readFileSync(path);
   const mimetype = mime.getType(path);
 
@@ -428,6 +436,7 @@ export const makeFileUploadFormData = ({ id, path }: { id: string; path: string 
   const formData = new FormData();
   formData.append('file', blob);
   formData.append('id', id);
+  formData.append('forceUpload', forceUpload ? 'true' : 'false');
 
   return formData;
 };

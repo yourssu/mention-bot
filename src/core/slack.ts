@@ -84,7 +84,14 @@ slackApp.message(new RegExp(/^!아카이브갱신$/), async (props) => {
   await getUserTokenByMessage(message);
 
   // 아카이빙할 대상들이에요. (현재 아카이빙된 모든 녀석들)
-  const forceArchiveTargets = await getAllArchivedChannelThreadTsRecord();
+  // const forceArchiveTargets = await getAllArchivedChannelThreadTsRecord();
+  const forceArchiveTargets = [
+    {
+      channel: 'C9SKN0VRP',
+      thread_ts: '1737267997.195699',
+    },
+  ];
+
   await props.say({
     text: [
       md.inlineEmoji('loading'),
@@ -111,7 +118,7 @@ slackApp.message(new RegExp(/^!아카이브갱신$/), async (props) => {
         message: { ...message, ...target },
       } as SlackMessageEvent;
 
-      await handleArchiveMessage({ ...newProps, forceSendTarget: sendTarget });
+      await handleArchiveMessage({ ...newProps, forceSendTarget: sendTarget, forceUpload: true });
     })
   );
 

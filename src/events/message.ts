@@ -78,8 +78,10 @@ export const handleArchiveMessage = async ({
   message,
   silent = false,
   forceSendTarget,
+  forceUpload,
 }: {
   forceSendTarget?: { channel: string; thread_ts: string; user: string }; // eslint-disable-line @typescript-eslint/naming-convention
+  forceUpload?: boolean;
   silent?: boolean;
 } & SlackMessageEvent) => {
   const sayTextPrefix = md.link(
@@ -209,6 +211,7 @@ export const handleArchiveMessage = async ({
     const { result: keyRecord, fail } = await uploadArchivedSlackFiles({
       token,
       files: extractOnlyUploadableFiles(preArchivedMessages),
+      forceUpload,
     });
     const failMessage = getFailMessage(fail);
 

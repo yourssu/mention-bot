@@ -30,12 +30,14 @@ interface DownloadFileIntoLocalProps {
 }
 
 interface UploadDownloadedFileProps {
+  forceUpload?: boolean;
   id: string;
   path: string;
 }
 
 interface UploadArchivedSlackFilesProps {
   files: NonNullable<PreArchivedMessageItem['files']>;
+  forceUpload?: boolean;
   token: string;
 }
 
@@ -63,7 +65,11 @@ export const downloadSlackFileIntoLocal = async ({
   await writeFileEnsureDirectory(path, stream);
 };
 
-export const uploadArchivedSlackFiles = async ({ token, files }: UploadArchivedSlackFilesProps) => {
+export const uploadArchivedSlackFiles = async ({
+  token,
+  files,
+  forceUpload,
+}: UploadArchivedSlackFilesProps) => {
   // const log = (message: string) => {
   //   console.log(`[${new Date().toString()}]`, message); // eslint-disable-line no-console
   // };
@@ -82,6 +88,7 @@ export const uploadArchivedSlackFiles = async ({ token, files }: UploadArchivedS
     const { key, code } = await uploadDownloadedSlackFile({
       id,
       path,
+      forceUpload,
     });
 
     if (code === 'FILE_TOO_LARGE') {
@@ -101,10 +108,14 @@ export const uploadArchivedMessage = async (message: ArchivedMessageItem) => {
   });
 };
 
-export const uploadDownloadedSlackFile = async ({ id, path }: UploadDownloadedFileProps) => {
+export const uploadDownloadedSlackFile = async ({
+  id,
+  path,
+  forceUpload = false,
+}: UploadDownloadedFileProps) => {
   try {
     const res = await archiveClient.put<{ key: string }>('file/upload', {
-      body: makeFileUploadFormData({ id, path }),
+      body: makeFileUploadFormData({ id, path, forceUpload }),
       timeout: 1000 * 60 * 5, // 5 minutes
     });
 

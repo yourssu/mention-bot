@@ -3,6 +3,7 @@ import { notionClient } from '@/core/notion';
 import { slackClient } from '@/core/slack';
 import { NotionMember } from '@/types/member';
 import { cacheWithRequest } from '@/utils/cache';
+import { writeFileEnsureDirectorySync } from '@/utils/file';
 
 export const getAllSlackMembers = async () => {
   const requestMembers = async () => {
@@ -27,8 +28,10 @@ export const getAllNotionMembers = async () => {
   };
 
   const getMemberName = (rawMember: any) => {
-    const baseName = rawMember.properties.이름.title[0].plain_text;
-    const normalizedBaseName = baseName.trim().toLowerCase();
+    writeFileEnsureDirectorySync('member.json', JSON.stringify(rawMember, null, 2));
+
+    const baseName: string | undefined = rawMember.properties.이름.title[0]?.plain_text;
+    const normalizedBaseName = baseName?.trim().toLowerCase();
 
     /* 
       유어슈 노션 DB에서 간혹 이름이 없는 사용자를 NAME으로 관리하고 있어요.
@@ -44,7 +47,9 @@ export const getAllNotionMembers = async () => {
     return normalizedBaseName;
   };
 
-  const transformToMember = (rawMember: any): NotionMember => {
+  const transformToMember = (
+    rawMember: any
+  ): { name: string | undefined } & Omit<NotionMember, 'name'> => {
     return {
       name: getMemberName(rawMember),
       position: rawMember.properties.POSITION.multi_select.map((position: any) => position.name),
@@ -78,7 +83,9 @@ export const getAllNotionMembers = async () => {
   };
 
   const getAllMembers = async () => {
-    return (await getRequestedMembers()).map(transformToMember).filter((member) => !!member.name);
+    return (await getRequestedMembers())
+      .map(transformToMember)
+      .filter((member) => !!member.name) as NotionMember[];
   };
 
   return await cacheWithRequest(getAllMembers, notionMembersCache);

@@ -1,0 +1,134 @@
+{
+  "object": "page",
+  "id": "39d267f9-d51b-456b-bf97-2e52bd863395",
+  "created_time": "2024-05-29T06:41:00.000Z",
+  "last_edited_time": "2025-03-05T16:15:00.000Z",
+  "created_by": {
+    "object": "user",
+    "id": "2c1fe74d-5722-47fb-aa6f-299f93723adb"
+  },
+  "last_edited_by": {
+    "object": "user",
+    "id": "142d872b-594c-8193-8c62-0002f77f11b9"
+  },
+  "cover": null,
+  "icon": {
+    "type": "emoji",
+    "emoji": "🍎"
+  },
+  "parent": {
+    "type": "database_id",
+    "database_id": "8c6b6640-9223-4458-8aeb-3a853e39480e"
+  },
+  "archived": false,
+  "in_trash": false,
+  "properties": {
+    "STATUS": {
+      "id": "%3B%40No",
+      "type": "select",
+      "select": {
+        "id": "b91059e3-cafa-4f2e-8e91-12bc2dfb02ea",
+        "name": "졸업",
+        "color": "gray"
+      }
+    },
+    "MEMBER": {
+      "id": "CM_W",
+      "type": "people",
+      "people": [
+        {
+          "object": "user",
+          "id": "2c1fe74d-5722-47fb-aa6f-299f93723adb",
+          "name": "Dahong [HR]",
+          "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocKbiY8RooOMsgNljgopI6JIgmE1PCL8Sfs_6rG5gWl3=s100",
+          "type": "person",
+          "person": {
+            "email": "dahong.urssu@gmail.com"
+          }
+        }
+      ]
+    },
+    "기술스택": {
+      "id": "G~jp",
+      "type": "rich_text",
+      "rich_text": []
+    },
+    "POSITION": {
+      "id": "%5DDjT",
+      "type": "multi_select",
+      "multi_select": [
+        {
+          "id": "0272d2a9-e07c-4056-ab00-89b57387bc09",
+          "name": "HR",
+          "color": "yellow"
+        }
+      ]
+    },
+    "현재 담당 업무": {
+      "id": "koiV",
+      "type": "multi_select",
+      "multi_select": []
+    },
+    "관심 분야 ": {
+      "id": "lOaJ",
+      "type": "rich_text",
+      "rich_text": []
+    },
+    "활동기간-액티브": {
+      "id": "lWcZ",
+      "type": "multi_select",
+      "multi_select": [
+        {
+          "id": "4517de71-bd6e-4bdd-a476-9aee6c1d9118",
+          "name": "24-2",
+          "color": "purple"
+        },
+        {
+          "id": "7cd78766-5b7c-4e20-88b9-4c4f4cfacba9",
+          "name": "24-1",
+          "color": "purple"
+        }
+      ]
+    },
+    "유어슈 가입날짜": {
+      "id": "lX%3Ai",
+      "type": "date",
+      "date": null
+    },
+    "포트폴리오": {
+      "id": "lt%5Dn",
+      "type": "url",
+      "url": null
+    },
+    "GITHUB": {
+      "id": "rh%7B%3A",
+      "type": "url",
+      "url": null
+    },
+    "이름": {
+      "id": "title",
+      "type": "title",
+      "title": [
+        {
+          "type": "text",
+          "text": {
+            "content": "Dahong",
+            "link": null
+          },
+          "annotations": {
+            "bold": false,
+            "italic": false,
+            "strikethrough": false,
+            "underline": false,
+            "code": false,
+            "color": "default"
+          },
+          "plain_text": "Dahong",
+          "href": null
+        }
+      ]
+    }
+  },
+  "url": "https://www.notion.so/Dahong-39d267f9d51b456bbf972e52bd863395",
+  "public_url": null
+}
